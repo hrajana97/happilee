@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useEffect } from "react"
 import { Camera, Music, Utensils, Flower2, Car, Cake, Wine, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -61,7 +62,7 @@ const iconComponents = {
 
 export function VendorCategories({ selectedCategory, onSelectCategory, initialCategoryId }: VendorCategoriesProps) {
   // If there's an initialCategoryId and no selected category, select it
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialCategoryId && !selectedCategory) {
       const category = categories.find((c) => c.id === initialCategoryId)
       if (category) {

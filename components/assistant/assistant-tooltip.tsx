@@ -1,10 +1,10 @@
 "use client"
 
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AssistantCharacter } from "./assistant-character"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { X, ArrowLeft, ArrowRight } from "lucide-react"
-import { useState } from "react"
 
 interface AssistantTooltipProps {
   tip: string
@@ -30,7 +30,7 @@ export function AssistantTooltip({
   const [isOpen, setIsOpen] = useState(true)
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (targetId) {
       const element = document.getElementById(targetId)
       if (element) {
@@ -49,7 +49,7 @@ export function AssistantTooltip({
     }
   }, [targetId])
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       const timer = setTimeout(() => {
         setIsOpen(false)

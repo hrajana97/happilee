@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import React, { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -273,12 +273,6 @@ within a price range of ${priceRangeText} sorted by ${sortText}.`
     setShowAddVenue(false)
   }
 
-  const handleInstagramClick = (instagram?: string) => {
-    if (!instagram) return
-
-    window.open(`https://instagram.com/${instagram.slice(1)}`, "_blank")
-  }
-
   return (
     <div className="p-8">
       <div className="mx-auto max-w-7xl">
@@ -444,7 +438,6 @@ within a price range of ${priceRangeText} sorted by ${sortText}.`
 
             <AssistantTooltip
               tip="Compare different venues side by side! Upload pricing sheets or manually enter package details to make informed decisions. Perfect for analyzing costs, capacity, and included services."
-              initialShow={true}
             >
               <Button variant="outline" asChild>
                 <Link href="/dashboard/vendors/venues/compare">Compare Venues</Link>
@@ -551,6 +544,11 @@ interface VenueCardProps {
 }
 
 function VenueCard({ venue, onContact }: VenueCardProps) {
+  const handleInstagramClick = (instagram?: string) => {
+    if (!instagram) return
+    window.open(`https://instagram.com/${instagram.slice(1)}`, "_blank")
+  }
+
   return (
     <Card key={venue.id} className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -614,7 +612,7 @@ function VenueCard({ venue, onContact }: VenueCardProps) {
           </div>
           <AICommunicationSummary
             vendorName={venue.name}
-            lastContact={venue.lastContact}
+            lastContact={venue.lastContact || null}
             emailCount={venue.emailThread}
             status={venue.contacted ? "in_progress" : "not_started"}
             nextStep={venue.contacted ? "Follow up on venue availability and pricing details" : "Initial contact"}
