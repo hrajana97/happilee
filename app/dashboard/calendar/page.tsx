@@ -169,6 +169,9 @@ export default function WeddingCalendarPage() {
   // Get events for selected date
   const selectedDateEvents = date ? events.filter((event) => event.date.toDateString() === date.toDateString()) : []
 
+  // Get all event dates for the calendar indicators
+  const eventDates = events.map(event => event.date)
+
   return (
     <ErrorBoundary>
       <div className="p-8">
@@ -300,7 +303,13 @@ export default function WeddingCalendarPage() {
           <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
             <Card>
               <CardContent className="p-6">
-                <Calendar mode="single" selected={date} onSelect={handleDateSelect} className="rounded-md border" />
+                <Calendar 
+                  mode="single" 
+                  selected={date} 
+                  onSelect={handleDateSelect} 
+                  className="rounded-md border"
+                  modifiers={{ hasEvent: eventDates }}
+                />
               </CardContent>
             </Card>
 

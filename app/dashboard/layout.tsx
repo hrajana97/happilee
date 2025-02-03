@@ -19,7 +19,7 @@ export default function DashboardLayout({
           <div className="absolute top-4 right-4">
             <PageSignOut />
           </div>
-          <main className="transition-[margin] duration-300 ease-in-out group-data-[collapsible=icon]/sidebar-wrapper:ml-[3rem] ml-[16rem]">
+          <main className="transition-[margin] duration-300 ease-in-out">
             {children}
           </main>
           <AssistantDialog />
