@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Heart, ArrowLeft } from "lucide-react"
+import { Plus, Heart, ArrowLeft, Share2, X, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AuthButtons } from "@/components/moodboard/auth-buttons"
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useToast } from "@/components/ui/use-toast"
 
 const moodboards: MoodboardCategory[] = [
   {
@@ -44,6 +45,27 @@ const moodboards: MoodboardCategory[] = [
 
 export default function MoodboardPage() {
   const [showNewMoodboard, setShowNewMoodboard] = useState(false)
+  const [showShareDialog, setShowShareDialog] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const { toast } = useToast()
+
+  const handleCopyLink = async () => {
+    const shareUrl = window.location.href
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      toast({
+        description: "Link copied to clipboard!",
+      })
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        description: "Failed to copy link",
+      })
+    }
+  }
+
   return (
     <div className="p-8">
       <div className="mx-auto max-w-7xl">
@@ -78,6 +100,55 @@ export default function MoodboardPage() {
                     <Input id="name" placeholder="e.g., Wedding Colors, Table Settings" />
                   </div>
                   <Button onClick={() => setShowNewMoodboard(false)}>Create Moodboard</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+              <DialogTrigger asChild>
+                <Button className="bg-[#738678] hover:bg-[#738678]/90">
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <div className="absolute right-4 top-4">
+                  <Button
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={() => setShowShareDialog(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <DialogHeader>
+                  <DialogTitle>Share Moodboard</DialogTitle>
+                  <DialogDescription>
+                    Anyone with this link will be able to view this moodboard
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center space-x-2 mt-4">
+                  <div className="grid flex-1 gap-2">
+                    <Label htmlFor="link" className="sr-only">
+                      Link
+                    </Label>
+                    <Input
+                      id="link"
+                      defaultValue={window.location.href}
+                      readOnly
+                      className="w-full"
+                    />
+                  </div>
+                  <Button
+                    size="icon"
+                    className="bg-[#738678] hover:bg-[#738678]/90"
+                    onClick={handleCopyLink}
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>

@@ -157,8 +157,8 @@ export default function MoodboardCategoryPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-b from-sage-50/50 to-white p-4 md:p-8">
+      <div className="mx-auto max-w-[1400px]">
         <div className="mb-8">
           <div className="flex items-center gap-8">
             <Button variant="ghost" size="icon" asChild>
@@ -167,34 +167,8 @@ export default function MoodboardCategoryPage() {
               </Link>
             </Button>
             <div>
-              <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-semibold text-sage-900">Decor & Florals</h1>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    /* Handle image upload */
-                  }}
-                >
-                  Upload Images
-                </Button>
-                {images.length === 0 && (
-                  <div className="ml-auto flex gap-2">
-                    <Button variant="outline" size="sm" onClick={handleDownload}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleShare}>
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Share
-                    </Button>
-                  </div>
-                )}
-              </div>
-              <p className="mt-2 text-sage-600">
-                Choose from our pre-selected images based on the latest wedding trends. Click ❤️ to save images you love,
-                or ✕ to skip. You can also upload images directly.
-              </p>
+              <h1 className="text-2xl font-semibold text-sage-900">{category.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}</h1>
+              <p className="mt-2 text-sage-600">Find your perfect wedding style</p>
             </div>
           </div>
         </div>

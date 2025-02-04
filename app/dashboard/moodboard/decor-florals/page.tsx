@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SwipeCard } from '@/components/moodboard/swipe-card'
 import { ColorPaletteDisplay } from '@/components/moodboard/color-palette'
 import { Button } from "@/components/ui/button"
-import { Heart, X } from 'lucide-react'
+import { Heart, X, ArrowLeft } from 'lucide-react'
 import type { FlowerImage, ColorPalette } from '@/types/moodboard'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import Link from 'next/link'
 
 const floralImages: FlowerImage[] = [
   {
@@ -166,8 +167,17 @@ export default function DecorFloralsPage() {
     <div className="min-h-screen bg-gradient-to-b from-sage-50/50 to-white p-4 md:p-8">
       <div className="mx-auto max-w-[1400px]">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-sage-900">Decor & Florals</h1>
-          <p className="mt-2 text-sage-600">Find your perfect wedding style</p>
+          <div className="flex items-center gap-8">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/dashboard/moodboard">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-2xl font-semibold text-sage-900">Decor & Florals</h1>
+              <p className="mt-2 text-sage-600">Find your perfect wedding style</p>
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
