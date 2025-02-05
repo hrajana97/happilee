@@ -1,24 +1,63 @@
 version: '3.8'
 
 services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs:/etc/nginx/certs
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+    restart: always
+
+  nginx-proxy-acme:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme:/etc/acme.sh
+    environment:
+      - DEFAULT_EMAIL=nholowsko@gmail.com
+    restart: always
+
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "3001:3000"
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
       - API_URL=http://api:4000
       - NEXT_PUBLIC_API_URL=http://localhost:4000
+      - VIRTUAL_HOST=happilee.site
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=happilee.site
     depends_on:
       - api
+    restart: always
 
   api:
     build:
       context: ./api
       dockerfile: Dockerfile
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     environment:
-      - NODE_ENV=production 
+      - NODE_ENV=production
+      - VIRTUAL_HOST=api.happilee.site
+      - VIRTUAL_PORT=4000
+      - LETSENCRYPT_HOST=api.happilee.site
+    restart: always
+
+volumes:
+  certs:
+  vhost:
+  html:
+  acme: 
