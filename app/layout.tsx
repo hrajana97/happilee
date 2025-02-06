@@ -20,11 +20,23 @@ const dmSans = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "Happilai - Say yes to AI do!",
+  title: "Happilee - Say yes to AI do",
   description: "Plan your perfect wedding with AI-powered tools and expert guidance",
   icons: {
-    icon: "/icon.png",
-    shortcut: "/favicon.ico",
+    icon: [
+      {
+        url: '/favicon32.ico',
+        type: 'image/x-icon',
+        sizes: '32x32'
+      },
+      {
+        url: '/icon.png',
+        type: 'image/png',
+        sizes: '192x192'
+      }
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 }
 
