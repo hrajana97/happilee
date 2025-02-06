@@ -35,10 +35,10 @@ services:
     environment:
       - NODE_ENV=production
       - API_URL=http://api:4000
-      - NEXT_PUBLIC_API_URL=http://localhost:4000
-      - VIRTUAL_HOST=happilee.site
+      - NEXT_PUBLIC_API_URL=https://api.happilee.site
+      - VIRTUAL_HOST=happilee.site,www.happilee.site
       - VIRTUAL_PORT=3000
-      - LETSENCRYPT_HOST=happilee.site
+      - LETSENCRYPT_HOST=happilee.site,www.happilee.site
     depends_on:
       - api
     restart: always
