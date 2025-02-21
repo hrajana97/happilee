@@ -4,6 +4,7 @@ export interface UserData {
   weddingDate: string
   budget: number
   guestCount: number
+  calculatedBudget?: any // Budget calculation result from budgetStorage
 }
 
 const isBrowser = typeof window !== 'undefined'

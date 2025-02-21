@@ -8,6 +8,10 @@ export type BudgetCategory = {
   priority: 'high' | 'medium' | 'low'
   rationale: string
   notes?: string
+  ranges?: {
+    min: number
+    max: number
+  }
   contracts?: {
     id: string
     name: string
