@@ -117,6 +117,55 @@ const BudgetSurvey = () => {
     }
   };
 
+  const loadDemoData = () => {
+    const demoData = {
+      totalBudget: '50000',
+      city: 'San Francisco',
+      state: 'CA',
+      guestCount: '100',
+      weddingDate: '2024-09-15',
+      photoVideo: 'Both Photography & Videography',
+      coverage: 'Full Day Coverage',
+      floralStyle: 'Modern & Minimalist',
+      diyElements: 'No DIY elements planned',
+      musicChoice: 'DJ',
+      beautyCoverage: 'Full Wedding Party',
+      planningAssistance: 'Month-of Coordinator',
+      cateringStyle: 'Plated',
+      barService: 'Full Open Bar',
+      isDestination: false
+    };
+
+    // Calculate budget with demo data
+    const locationData = {
+      city: demoData.city,
+      state: demoData.state,
+      country: "United States"
+    };
+
+    const priorities = ["photography", "entertainment"];
+    const result = budgetStorage.calculateBudget(parseInt(demoData.totalBudget), locationData, priorities);
+
+    // Store the result
+    storage.setUserData({
+      budget: parseInt(demoData.totalBudget),
+      weddingDate: demoData.weddingDate,
+      guestCount: parseInt(demoData.guestCount),
+      calculatedBudget: result,
+      isDemo: true
+    });
+
+    // Navigate to budget breakdown
+    window.location.href = '/budget-breakdown';
+  };
+
+  // Add reset demo function
+  const resetDemo = () => {
+    budgetStorage.clearBudgetData();
+    storage.clearUserData();
+    window.location.href = '/dashboard/budget';
+  };
+
   // Add predefined options
   const CATERING_OPTIONS = ["Plated", "Buffet", "Family Style", "Food Stations", "Heavy Appetizers"];
   const BAR_OPTIONS = ["Full Open Bar", "Beer & Wine Only", "Limited Open Bar", "Cash Bar", "No Alcohol"];
@@ -182,92 +231,92 @@ const BudgetSurvey = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>City</Label>
-                <Input
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input
                   type="text"
                   name="city"
-                  placeholder="Enter city"
+                      placeholder="Enter city"
                   value={budgetData.city}
                   onChange={handleInputChange}
-                />
-              </div>
+                    />
+                  </div>
 
               {budgetData.isDestination ? (
-                <div className="space-y-2">
-                  <Label>Country</Label>
-                  <Input
+                  <div className="space-y-2">
+                    <Label>Country</Label>
+                    <Input
                     type="text"
                     name="country"
-                    placeholder="Enter country"
+                      placeholder="Enter country"
                     value={budgetData.country}
                     onChange={handleInputChange}
-                  />
-                </div>
+                    />
+                  </div>
               ) : (
-                <div className="space-y-2">
-                  <Label>State</Label>
-                  <Select
+                  <div className="space-y-2">
+                    <Label>State</Label>
+                    <Select
                     value={budgetData.state}
                     onValueChange={(value) => setBudgetData(prev => ({ ...prev, state: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="AL">Alabama</SelectItem>
-                      <SelectItem value="AK">Alaska</SelectItem>
-                      <SelectItem value="AZ">Arizona</SelectItem>
-                      <SelectItem value="AR">Arkansas</SelectItem>
-                      <SelectItem value="CA">California</SelectItem>
-                      <SelectItem value="CO">Colorado</SelectItem>
-                      <SelectItem value="CT">Connecticut</SelectItem>
-                      <SelectItem value="DE">Delaware</SelectItem>
-                      <SelectItem value="FL">Florida</SelectItem>
-                      <SelectItem value="GA">Georgia</SelectItem>
-                      <SelectItem value="HI">Hawaii</SelectItem>
-                      <SelectItem value="ID">Idaho</SelectItem>
-                      <SelectItem value="IL">Illinois</SelectItem>
-                      <SelectItem value="IN">Indiana</SelectItem>
-                      <SelectItem value="IA">Iowa</SelectItem>
-                      <SelectItem value="KS">Kansas</SelectItem>
-                      <SelectItem value="KY">Kentucky</SelectItem>
-                      <SelectItem value="LA">Louisiana</SelectItem>
-                      <SelectItem value="ME">Maine</SelectItem>
-                      <SelectItem value="MD">Maryland</SelectItem>
-                      <SelectItem value="MA">Massachusetts</SelectItem>
-                      <SelectItem value="MI">Michigan</SelectItem>
-                      <SelectItem value="MN">Minnesota</SelectItem>
-                      <SelectItem value="MS">Mississippi</SelectItem>
-                      <SelectItem value="MO">Missouri</SelectItem>
-                      <SelectItem value="MT">Montana</SelectItem>
-                      <SelectItem value="NE">Nebraska</SelectItem>
-                      <SelectItem value="NV">Nevada</SelectItem>
-                      <SelectItem value="NH">New Hampshire</SelectItem>
-                      <SelectItem value="NJ">New Jersey</SelectItem>
-                      <SelectItem value="NM">New Mexico</SelectItem>
-                      <SelectItem value="NY">New York</SelectItem>
-                      <SelectItem value="NC">North Carolina</SelectItem>
-                      <SelectItem value="ND">North Dakota</SelectItem>
-                      <SelectItem value="OH">Ohio</SelectItem>
-                      <SelectItem value="OK">Oklahoma</SelectItem>
-                      <SelectItem value="OR">Oregon</SelectItem>
-                      <SelectItem value="PA">Pennsylvania</SelectItem>
-                      <SelectItem value="RI">Rhode Island</SelectItem>
-                      <SelectItem value="SC">South Carolina</SelectItem>
-                      <SelectItem value="SD">South Dakota</SelectItem>
-                      <SelectItem value="TN">Tennessee</SelectItem>
-                      <SelectItem value="TX">Texas</SelectItem>
-                      <SelectItem value="UT">Utah</SelectItem>
-                      <SelectItem value="VT">Vermont</SelectItem>
-                      <SelectItem value="VA">Virginia</SelectItem>
-                      <SelectItem value="WA">Washington</SelectItem>
-                      <SelectItem value="WV">West Virginia</SelectItem>
-                      <SelectItem value="WI">Wisconsin</SelectItem>
-                      <SelectItem value="WY">Wyoming</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AL">Alabama</SelectItem>
+                        <SelectItem value="AK">Alaska</SelectItem>
+                        <SelectItem value="AZ">Arizona</SelectItem>
+                        <SelectItem value="AR">Arkansas</SelectItem>
+                        <SelectItem value="CA">California</SelectItem>
+                        <SelectItem value="CO">Colorado</SelectItem>
+                        <SelectItem value="CT">Connecticut</SelectItem>
+                        <SelectItem value="DE">Delaware</SelectItem>
+                        <SelectItem value="FL">Florida</SelectItem>
+                        <SelectItem value="GA">Georgia</SelectItem>
+                        <SelectItem value="HI">Hawaii</SelectItem>
+                        <SelectItem value="ID">Idaho</SelectItem>
+                        <SelectItem value="IL">Illinois</SelectItem>
+                        <SelectItem value="IN">Indiana</SelectItem>
+                        <SelectItem value="IA">Iowa</SelectItem>
+                        <SelectItem value="KS">Kansas</SelectItem>
+                        <SelectItem value="KY">Kentucky</SelectItem>
+                        <SelectItem value="LA">Louisiana</SelectItem>
+                        <SelectItem value="ME">Maine</SelectItem>
+                        <SelectItem value="MD">Maryland</SelectItem>
+                        <SelectItem value="MA">Massachusetts</SelectItem>
+                        <SelectItem value="MI">Michigan</SelectItem>
+                        <SelectItem value="MN">Minnesota</SelectItem>
+                        <SelectItem value="MS">Mississippi</SelectItem>
+                        <SelectItem value="MO">Missouri</SelectItem>
+                        <SelectItem value="MT">Montana</SelectItem>
+                        <SelectItem value="NE">Nebraska</SelectItem>
+                        <SelectItem value="NV">Nevada</SelectItem>
+                        <SelectItem value="NH">New Hampshire</SelectItem>
+                        <SelectItem value="NJ">New Jersey</SelectItem>
+                        <SelectItem value="NM">New Mexico</SelectItem>
+                        <SelectItem value="NY">New York</SelectItem>
+                        <SelectItem value="NC">North Carolina</SelectItem>
+                        <SelectItem value="ND">North Dakota</SelectItem>
+                        <SelectItem value="OH">Ohio</SelectItem>
+                        <SelectItem value="OK">Oklahoma</SelectItem>
+                        <SelectItem value="OR">Oregon</SelectItem>
+                        <SelectItem value="PA">Pennsylvania</SelectItem>
+                        <SelectItem value="RI">Rhode Island</SelectItem>
+                        <SelectItem value="SC">South Carolina</SelectItem>
+                        <SelectItem value="SD">South Dakota</SelectItem>
+                        <SelectItem value="TN">Tennessee</SelectItem>
+                        <SelectItem value="TX">Texas</SelectItem>
+                        <SelectItem value="UT">Utah</SelectItem>
+                        <SelectItem value="VT">Vermont</SelectItem>
+                        <SelectItem value="VA">Virginia</SelectItem>
+                        <SelectItem value="WA">Washington</SelectItem>
+                        <SelectItem value="WV">West Virginia</SelectItem>
+                        <SelectItem value="WI">Wisconsin</SelectItem>
+                        <SelectItem value="WY">Wyoming</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
               )}
 
               <div className="space-y-2">
@@ -282,16 +331,16 @@ const BudgetSurvey = () => {
                 />
               </div>
 
-              <div className="space-y-2">
+                  <div className="space-y-2">
                 <Label>Wedding Date</Label>
                 <p className="text-sm text-sage-600">Seasonal demand can affect pricing for venues and services.</p>
-                <Input
+                    <Input
                   type="date"
                   name="weddingDate"
                   value={budgetData.weddingDate}
                   onChange={handleInputChange}
-                />
-              </div>
+                    />
+                  </div>
             </div>
           </div>
         )}
@@ -406,8 +455,8 @@ const BudgetSurvey = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
+                </div>
+                </div>
         )}
 
         {step === 5 && (
@@ -457,9 +506,9 @@ const BudgetSurvey = () => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+            </div>
 
-              <div className="space-y-2">
+            <div className="space-y-2">
                 <Label>Catering Style</Label>
                 <p className="text-sm text-sage-600">Choose your preferred dining style for the reception.</p>
                 <Select
@@ -475,7 +524,7 @@ const BudgetSurvey = () => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+                  </div>
 
               <div className="space-y-2">
                 <Label>Bar Service</Label>
@@ -641,20 +690,40 @@ const BudgetSurvey = () => {
         )}
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0 pt-8">
+          <div className="flex gap-4">
           <Button
             variant="outline"
-            onClick={handlePreviousStep}
+              onClick={handlePreviousStep}
             disabled={step === 1}
             className="w-full sm:w-auto bg-sage-50 hover:bg-sage-100 text-[#4A5D4E] border-sage-200"
           >
             Back
           </Button>
           <Button
-            onClick={step === 7 ? calculateBudget : handleNextStep}
+              variant="outline"
+              onClick={loadDemoData}
+              className="w-full sm:w-auto bg-sage-50 hover:bg-sage-100 text-[#4A5D4E] border-sage-200"
+            >
+              View Demo Budget
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            {localStorage.getItem("happilai_user_type") === "demo" && (
+              <Button
+                variant="outline"
+                onClick={resetDemo}
+                className="w-full sm:w-auto bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 border-red-200"
+              >
+                Start Over
+              </Button>
+            )}
+            <Button
+              onClick={step === 7 ? calculateBudget : handleNextStep}
             className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
           >
-            {step === 7 ? "Calculate Budget" : "Next"}
+              {step === 7 ? "Calculate Budget" : "Next"}
           </Button>
+          </div>
         </div>
       </div>
     </div>

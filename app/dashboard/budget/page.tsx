@@ -171,6 +171,7 @@ export default function BudgetPage() {
   const handleReset = useCallback(() => {
     try {
       budgetStorage.clearBudgetData()
+      storage.clearUserData()
       setBudgetData(null)
       setCategories([])
       setShowQuestionnaire(true)
@@ -244,18 +245,18 @@ export default function BudgetPage() {
 
   // Main budget view
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-sage-50/50 to-white p-4 sm:p-8">
+    <div className="min-h-screen w-full bg-gradient-to-br from-sage-100/80 via-[#E8F3E9] to-white p-4 sm:p-8">
       <div className="mx-auto max-w-7xl">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 bg-gradient-to-r from-white/90 to-sage-50/90 rounded-lg p-6 shadow-lg border border-sage-200/50 backdrop-blur-sm">
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-sage-900">Wedding Budget</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-[#1F2937] bg-gradient-to-r from-[#2C3A2D] to-[#3F4F41] bg-clip-text text-transparent">Wedding Budget</h1>
             <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <p className="text-sm sm:text-base text-sage-600">
-                Total Budget: ${budgetData?.totalBudget.toLocaleString()}
+              <p className="text-sm sm:text-base text-[#4A5D4E]">
+                Total Budget: <span className="font-medium text-[#2C3A2D] bg-gradient-to-r from-sage-700 to-sage-600 bg-clip-text text-transparent">${budgetData?.totalBudget.toLocaleString()}</span>
               </p>
               <span className="hidden sm:inline text-sage-300">|</span>
-              <p className="text-sm sm:text-base text-sage-600">
-                Remaining: <span className={totalRemaining < 0 ? 'text-red-500' : ''}>
+              <p className="text-sm sm:text-base text-[#4A5D4E]">
+                Remaining: <span className={`font-medium ${totalRemaining < 0 ? 'text-red-600' : 'bg-gradient-to-r from-sage-700 to-sage-600 bg-clip-text text-transparent'}`}>
                   ${totalRemaining.toLocaleString()}
                 </span>
               </p>
@@ -265,14 +266,14 @@ export default function BudgetPage() {
             <Button 
               variant="outline" 
               onClick={() => setShowQuestionnaire(true)}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-gradient-to-r from-[#E8F3E9] to-[#D1E6D3] hover:from-[#D1E6D3] hover:to-[#C1D6C3] text-[#2C3A2D] border-sage-200 shadow-sm transition-all duration-300"
             >
               Edit Responses
             </Button>
             <Button 
               variant="outline" 
               onClick={() => setShowResetConfirm(true)}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-600 hover:text-red-700 border-red-200 shadow-sm transition-all duration-300"
             >
               Start Over
             </Button>
@@ -281,35 +282,35 @@ export default function BudgetPage() {
 
         <div className="grid gap-4 sm:gap-6">
           {/* Budget Rationale Card */}
-          <Card>
-            <CardHeader>
+          <Card className="border-sage-200/50 shadow-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
               <div className="flex items-center gap-2">
-                <Info className="h-5 w-5 text-sage-600" />
-                <CardTitle>Budget Breakdown Rationale</CardTitle>
+                <Info className="h-5 w-5 text-sage-700" />
+                <CardTitle className="text-[#2C3A2D]">Budget Breakdown Rationale</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg bg-sage-50 p-4">
-                <p className="text-sage-700 mb-2">
+            <CardContent className="space-y-4 p-6">
+              <div className="rounded-lg bg-gradient-to-br from-[#E8F3E9] via-sage-50 to-white p-6 border border-sage-200/50 shadow-md">
+                <p className="text-[#2C3A2D] font-medium mb-4 bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">
                   Your budget of {budgetData?.rationale.totalBudget} has been allocated based on:
                 </p>
-                <ul className="space-y-2 text-sage-600">
+                <ul className="space-y-3 text-[#4A5D4E]">
                   {budgetData?.rationale.notes.map((note, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <span className="text-sage-400">•</span>
+                    <li key={index} className="flex items-start gap-3 bg-white/50 p-3 rounded-md border border-sage-100/50 shadow-sm">
+                      <span className="text-sage-500 mt-1">•</span>
                       {note}
                     </li>
                   ))}
                 </ul>
               </div>
               {budgetData?.priorities.length ? (
-                <div>
-                  <p className="text-sm font-medium text-sage-700 mb-2">Priority Categories:</p>
-                  <div className="flex gap-2">
+                <div className="bg-gradient-to-r from-sage-50/50 to-white p-4 rounded-lg border border-sage-200/50 shadow-sm">
+                  <p className="text-sm font-medium text-sage-800 mb-3">Priority Categories:</p>
+                  <div className="flex flex-wrap gap-2">
                     {budgetData.priorities.map((priority) => (
                       <span
                         key={priority}
-                        className="inline-flex items-center rounded-full bg-sage-100 px-2.5 py-0.5 text-xs font-medium text-sage-800"
+                        className="inline-flex items-center rounded-full bg-gradient-to-r from-[#E8F3E9] to-sage-100 px-4 py-1.5 text-sm font-medium text-[#2C3A2D] border border-sage-200/50 shadow-sm transition-all duration-300 hover:shadow-md hover:border-sage-300/50"
                       >
                         {priority.charAt(0).toUpperCase() + priority.slice(1)}
                       </span>
@@ -321,24 +322,25 @@ export default function BudgetPage() {
           </Card>
 
           {/* Budget Table */}
-          <Card>
-            <CardHeader>
+          <Card className="border-sage-200/50 shadow-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Budget Breakdown</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-[#2C3A2D]">Budget Breakdown</CardTitle>
+                  <CardDescription className="text-sage-600">
                     Click on any estimated amount to adjust it
                   </CardDescription>
                 </div>
                 <Button 
                   variant="outline" 
                   onClick={() => setShowAddCategory(true)}
+                  className="bg-gradient-to-r from-[#E8F3E9] to-[#D1E6D3] hover:from-[#D1E6D3] hover:to-[#C1D6C3] text-[#2C3A2D] border-sage-200 shadow-sm transition-all duration-300"
                 >
                   Add Category
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-2 sm:p-6">
+            <CardContent className="p-2 sm:p-6 bg-gradient-to-br from-white to-sage-50/30">
               <BudgetTable
                 categories={categories}
                 onUpdateCategory={handleUpdateCategory}
