@@ -19,7 +19,7 @@ import BudgetQuestionnaire from '@/components/budget/budget-questionnaire'
 import { storage } from '@/lib/storage'
 import budgetStorage from '@/lib/budget-storage'
 import type { BudgetCategory, BudgetData } from '@/types/budget'
-import { Loader2, AlertCircle, Info } from 'lucide-react'
+import { Loader2, AlertCircle, Info, ChevronUp, ChevronDown } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -44,6 +44,7 @@ export default function BudgetPage() {
     name: '',
     estimatedCost: 0
   })
+  const [showHowToUse, setShowHowToUse] = useState(true)
 
   // Calculate totals
   const totalSpent = categories.reduce((sum, cat) => sum + cat.actualCost, 0)
@@ -366,6 +367,36 @@ export default function BudgetPage() {
             categories={categories}
             startDate={new Date()}
           />
+
+          <Card className="mb-6 border-sage-200/50 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50 cursor-pointer" onClick={() => setShowHowToUse(!showHowToUse)}>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium text-sage-900 bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">How to Use This Breakdown</h2>
+                <Button variant="ghost" size="sm">
+                  {showHowToUse ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            {showHowToUse && (
+              <CardContent className="pt-6 bg-gradient-to-br from-white to-sage-50/30">
+                <ul className="space-y-3 text-sage-700">
+                  <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
+                    <span className="font-medium">Quick Edit:</span> Adjust key details like guest count, date, and location to see how they affect your budget in real-time.
+                  </li>
+                  <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
+                    <span className="font-medium">Category Management:</span> Click the settings icon on any category to adjust its allocation, priority, or remove it entirely.
+                  </li>
+                  <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
+                    <span className="font-medium">Detailed View:</span> Click any category to see its breakdown, including what's included and money-saving tips.
+                  </li>
+                </ul>
+              </CardContent>
+            )}
+          </Card>
         </div>
 
         <Dialog open={showAddCategory} onOpenChange={setShowAddCategory}>

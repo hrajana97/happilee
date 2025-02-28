@@ -5,6 +5,7 @@ export interface UserData {
   budget: number
   guestCount: number
   calculatedBudget?: any // Budget calculation result from budgetStorage
+  isDemo?: boolean
 }
 
 const isBrowser = typeof window !== 'undefined'

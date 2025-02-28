@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { storage } from "@/lib/storage";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronDown, ChevronUp, FileSpreadsheet, Download, Calendar, Users, MapPin } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, FileSpreadsheet, Download, Calendar, Users, MapPin, Plus, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import type { BudgetCategory, BudgetData } from "@/types/budget";
 import {
@@ -28,11 +28,55 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider"
+import { AlertTriangle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface ValidationResult {
   isValid: boolean;
   errors: Record<string, string>;
   impactedCategories: string[];
+}
+
+interface UserData {
+  totalBudget: number;
+  budget: number;
+  location: {
+    city: string;
+    state?: string;
+    country: string;
+    isDestination: boolean;
+  };
+  guestCount: number;
+  priorities: string[];
+  categories: BudgetCategory[];
+  lastUpdated: string;
+  rationale: {
+    totalBudget: string;
+    locationFactor: number;
+    seasonalFactor: number;
+    notes: string[];
+  };
+  calculatedBudget: {
+    categories: BudgetCategory[];
+    rationale: {
+      totalBudget: string;
+      locationFactor: number;
+      seasonalFactor: number;
+      notes: string[];
+    };
+    location?: {
+      city: string;
+      state?: string;
+      country: string;
+      isDestination: boolean;
+    };
+  };
 }
 
 export default function BudgetBreakdownPage() {
@@ -50,12 +94,45 @@ export default function BudgetBreakdownPage() {
   });
   const [impactedCategories, setImpactedCategories] = useState<string[]>([]);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState<string | null>(null);
+  const [isHowToUseExpanded, setIsHowToUseExpanded] = useState(false);
 
   useEffect(() => {
     try {
       const userData = storage.getUserData();
       if (userData?.calculatedBudget) {
-        setBudgetData(userData);
+        // Transform UserData into BudgetData with proper type checking
+        const transformedData: BudgetData = {
+          totalBudget: userData.budget || 0,
+          budget: userData.budget || 0,
+          location: userData.calculatedBudget.location || {
+            city: "Austin",
+            state: "Texas",
+            country: "United States",
+            isDestination: false
+          },
+          guestCount: userData.guestCount || 0,
+          priorities: [],
+          categories: userData.calculatedBudget.categories || [],
+          lastUpdated: new Date().toISOString(),
+          rationale: {
+            totalBudget: (userData.budget || 0).toString(),
+            locationFactor: 1,
+            seasonalFactor: 1,
+            notes: []
+          },
+          calculatedBudget: {
+            categories: userData.calculatedBudget.categories || [],
+            rationale: {
+              totalBudget: (userData.budget || 0).toString(),
+              locationFactor: userData.calculatedBudget.rationale?.locationFactor || 1,
+              seasonalFactor: userData.calculatedBudget.rationale?.seasonalFactor || 1,
+              notes: []
+            },
+            location: userData.calculatedBudget.location
+          }
+        };
+        setBudgetData(transformedData);
       }
     } catch (error) {
       console.error('Error loading budget data:', error);
@@ -68,7 +145,7 @@ export default function BudgetBreakdownPage() {
     if (budgetData) {
       setEditedPreferences({
         guestCount: budgetData.guestCount,
-        weddingDate: budgetData.weddingDate || '',
+        weddingDate: budgetData.calculatedBudget.location?.weddingDate || '',
         city: budgetData.calculatedBudget.location?.city || '',
         state: budgetData.calculatedBudget.location?.state || '',
         country: budgetData.calculatedBudget.location?.country || '',
@@ -288,9 +365,9 @@ export default function BudgetBreakdownPage() {
 
     if (!validation.isValid) {
       toast({
+        variant: "default",
         title: "Warning",
-        description: Object.values(validation.errors)[0],
-        variant: "warning"
+        description: Object.values(validation.errors)[0]
       });
     }
 
@@ -303,7 +380,7 @@ export default function BudgetBreakdownPage() {
       toast({
         title: "Category Impact Warning",
         description: `This change will significantly affect: ${impactedNames}`,
-        variant: "warning"
+        variant: "default"
       });
     }
 
@@ -344,6 +421,138 @@ export default function BudgetBreakdownPage() {
     }
   };
 
+  const handleUserDataUpdate = (userData: Partial<UserData>) => {
+    setBudgetData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        totalBudget: userData.budget ?? prev.totalBudget,
+        budget: userData.budget ?? prev.budget,
+        guestCount: userData.guestCount ?? prev.guestCount,
+        calculatedBudget: {
+          ...prev.calculatedBudget,
+          location: userData.calculatedBudget?.location || prev.calculatedBudget.location
+        }
+      };
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const handleAddCategory = () => {
+    const newCategory: BudgetCategory = {
+      id: `category-${Date.now()}`,
+      name: "New Category",
+      percentage: 0,
+      estimatedCost: 0,
+      actualCost: 0,
+      remaining: 0,
+      priority: "medium",
+      rationale: "Custom category added by user"
+    };
+
+    setBudgetData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        calculatedBudget: {
+          ...prev.calculatedBudget,
+          categories: [...prev.calculatedBudget.categories, newCategory]
+        }
+      };
+    });
+
+    toast({
+      title: "Category Added",
+      description: "New category has been added to your budget."
+    });
+  };
+
+  const locationDisplay = budgetData?.calculatedBudget?.location?.city 
+    ? `${budgetData.calculatedBudget.location.city}, ${budgetData.calculatedBudget.location.state}`
+    : "Austin, Texas";
+
+  // Add new function to check budget overage
+  const checkBudgetOverage = () => {
+    if (!budgetData) return null;
+
+    const totalEstimated = budgetData.calculatedBudget.categories.reduce(
+      (sum, cat) => sum + cat.estimatedCost, 
+      0
+    );
+
+    if (totalEstimated > budgetData.budget) {
+      const overage = totalEstimated - budgetData.budget;
+      const overagePercentage = Math.round((overage / budgetData.budget) * 100);
+      
+      // Analyze the main cost drivers
+      const costDrivers = budgetData.calculatedBudget.categories
+        .map(cat => ({
+          name: cat.name,
+          cost: cat.estimatedCost,
+          percentage: cat.percentage,
+          overBudget: cat.estimatedCost - (cat.ranges?.max || cat.estimatedCost * 1.1)
+        }))
+        .filter(driver => driver.overBudget > 0)
+        .sort((a, b) => b.overBudget - a.overBudget)
+        .slice(0, 3);
+
+      // Get cost-saving recommendations
+      const recommendations = [];
+      
+      // Add cost drivers analysis
+      if (costDrivers.length > 0) {
+        recommendations.push(`The greatest contributors to this overage are: ${costDrivers.map(d => 
+          `${d.name} (${formatCurrency(d.overBudget)} over typical maximum)`
+        ).join(', ')}`);
+      }
+      
+      // Check if they have expensive catering style
+      const cateringCategory = budgetData.calculatedBudget.categories.find(
+        cat => cat.name.toLowerCase().includes('catering')
+      );
+      if (cateringCategory && cateringCategory.estimatedCost > budgetData.budget * 0.3) {
+        recommendations.push("Consider switching to buffet-style service to save 20-30% on catering costs");
+      }
+
+      // Check guest count impact
+      if (budgetData.guestCount > 100) {
+        recommendations.push(`Reducing guest count by ${Math.round(budgetData.guestCount * 0.2)} could save approximately ${formatCurrency(overage * 0.2)}`);
+      }
+
+      // Check location factor
+      if (budgetData.calculatedBudget.rationale.locationFactor > 1.3) {
+        recommendations.push("Consider venues in nearby areas with lower cost factors");
+      }
+
+      // Check if they have any low-priority categories with high costs
+      const expensiveLowPriority = budgetData.calculatedBudget.categories
+        .filter(cat => cat.priority === 'low' && cat.estimatedCost > budgetData.budget * 0.1)
+        .map(cat => cat.name);
+      
+      if (expensiveLowPriority.length > 0) {
+        recommendations.push(`Review spending in lower-priority categories: ${expensiveLowPriority.join(', ')}`);
+      }
+
+      return {
+        overage,
+        overagePercentage,
+        recommendations,
+        costDrivers
+      };
+    }
+
+    return null;
+  };
+
+  // Add the warning alert before the budget overview card
+  const budgetOverage = checkBudgetOverage();
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -359,13 +568,6 @@ export default function BudgetBreakdownPage() {
       </div>
     );
   }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-sage-100/80 via-[#E8F3E9] to-white p-4 sm:p-8">
@@ -405,25 +607,71 @@ export default function BudgetBreakdownPage() {
             </DropdownMenu>
           </div>
           
-          <Card className="mb-6 border-sage-200/50 shadow-lg">
-            <CardContent className="pt-6 bg-gradient-to-br from-white to-sage-50/30">
-              <h2 className="text-lg font-medium text-sage-900 mb-4 bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">How to Use This Breakdown</h2>
-              <ul className="space-y-3 text-sage-700">
-                <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
-                  <span className="font-medium">Quick Edit:</span> Adjust key details like guest count, date, and location to see how they affect your budget in real-time.
-                </li>
-                <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
-                  <span className="font-medium">Category Management:</span> Click the settings icon on any category to adjust its allocation, priority, or remove it entirely.
-                </li>
-                <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
-                  <span className="font-medium">Detailed View:</span> Click any category to see its breakdown, including what's included and money-saving tips.
-                </li>
-              </ul>
-            </CardContent>
+          <Card className="mb-6 border-sage-200/50 shadow-lg overflow-hidden">
+            <CardHeader className="bg-gradient-to-br from-white to-sage-50/30 cursor-pointer" onClick={() => setIsHowToUseExpanded(!isHowToUseExpanded)}>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-medium text-sage-900 bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">How to Use This Breakdown</h2>
+                <Button variant="ghost" size="sm">
+                  {isHowToUseExpanded ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            {isHowToUseExpanded && (
+              <CardContent className="bg-gradient-to-br from-white to-sage-50/30 pt-4">
+                <ul className="space-y-3 text-sage-700">
+                  <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
+                    <span className="font-medium">Quick Edit:</span> Adjust key details like guest count, date, and location to see how they affect your budget in real-time.
+                  </li>
+                  <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
+                    <span className="font-medium">Category Management:</span> Click any category row to view and edit its details, including budget allocation and priority.
+                  </li>
+                  <li className="bg-white/60 p-3 rounded-lg border border-sage-200/50 shadow-sm">
+                    <span className="font-medium">Actions Menu:</span> Use the ⋮ menu on each category for quick actions like viewing details or removing the category.
+                  </li>
+                </ul>
+              </CardContent>
+            )}
           </Card>
         </div>
 
         <div className="grid gap-6">
+          {budgetOverage && (
+            <Alert variant="destructive" className="bg-red-50 border-red-200">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-medium text-red-800">
+                      Your estimated costs exceed your budget by {formatCurrency(budgetOverage.overage)} ({budgetOverage.overagePercentage}% over)
+                    </p>
+                    {budgetOverage.costDrivers.length > 0 && (
+                      <p className="text-red-700 mt-2">
+                        <strong>Main cost drivers:</strong> {budgetOverage.costDrivers.map(d => 
+                          `${d.name} (${formatCurrency(d.overBudget)} over typical maximum)`
+                        ).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-red-700 font-medium">Recommended actions to reduce costs:</p>
+                    <ul className="list-disc pl-4 space-y-1 mt-2">
+                      {budgetOverage.recommendations.filter(rec => !rec.includes('greatest contributors')).map((rec, index) => (
+                        <li key={index} className="text-red-700">{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="text-red-700 mt-2">
+                    Consider adjusting these elements or increasing your budget to ensure a realistic plan.
+                  </p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Quick Edit Card */}
           <Card className="border-sage-200/50 shadow-lg overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
@@ -510,7 +758,9 @@ export default function BudgetBreakdownPage() {
                     />
                   ) : (
                     <p className="text-lg font-medium text-sage-900">
-                      {new Date(budgetData?.weddingDate).toLocaleDateString()}
+                      {budgetData?.calculatedBudget?.location?.weddingDate 
+                        ? new Date(budgetData.calculatedBudget.location.weddingDate).toLocaleDateString()
+                        : 'Not set'}
                     </p>
                   )}
                   <p className="text-sm text-sage-600">Season affects venue and vendor availability and pricing</p>
@@ -560,9 +810,7 @@ export default function BudgetBreakdownPage() {
                     </div>
                   ) : (
                     <p className="text-lg font-medium text-sage-900">
-                      {budgetData?.calculatedBudget.location?.city}
-                      {budgetData?.calculatedBudget.location?.state ? `, ${budgetData.calculatedBudget.location.state}` : ''}
-                      {budgetData?.calculatedBudget.location?.country ? `, ${budgetData.calculatedBudget.location.country}` : ''}
+                      {locationDisplay}
                     </p>
                   )}
                   <p className="text-sm text-sage-600">Location impacts vendor availability and regional pricing variations</p>
@@ -571,13 +819,41 @@ export default function BudgetBreakdownPage() {
             </CardContent>
           </Card>
 
-          {/* Overview Card */}
-          <Card className="border-sage-200/50 shadow-lg overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
-              <CardTitle className="text-[#2C3A2D]">Budget Overview</CardTitle>
+          {/* Budget Overview & Summary */}
+          <Card className="border-sage-200">
+            <CardHeader className="bg-sage-50/50">
+              <div className="flex items-center justify-between">
+                <CardTitle>Budget Overview</CardTitle>
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-sage-600">
+                          <span className="text-sm">💡 Quick Tips</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="w-[300px] p-4">
+                        <div className="space-y-2">
+                          <p className="text-sm">• Click any category row to view and edit its details</p>
+                          <p className="text-sm">• Use the ⋮ menu to quickly view details or remove a category</p>
+                          <p className="text-sm">• Add new categories using the "Add Category" button</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddCategory}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6 bg-gradient-to-br from-white to-sage-50/30">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm">
                   <p className="text-sm text-sage-600 font-normal">Total Budget</p>
                   <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">{formatCurrency(budgetData.budget)}</p>
@@ -587,75 +863,113 @@ export default function BudgetBreakdownPage() {
                   <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">{budgetData.guestCount} guests</p>
                 </div>
                 <div className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm">
-                  <p className="text-sm text-sage-600 font-normal">Per Guest Cost</p>
+                  <p className="text-sm text-sage-600 font-normal">Location</p>
                   <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">
-                    {formatCurrency(budgetData.budget / budgetData.guestCount)}
+                    {locationDisplay} ({budgetData.calculatedBudget.rationale.locationFactor}x)
                   </p>
                 </div>
               </div>
 
-              {/* Location and Seasonal Factors */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-sage-200/50">
-                <div className="bg-gradient-to-br from-white to-sage-50/30 rounded-lg p-4 border border-sage-200/50 shadow-sm">
-                  <p className="text-sm text-sage-700 font-medium mb-2">Location Impact</p>
-                  <p className="text-sm text-sage-900 font-normal leading-relaxed">
-                    Your location ({budgetData.calculatedBudget.rationale.locationFactor}x the national average) 
-                    <span className={budgetData.calculatedBudget.rationale.locationFactor > 1 ? "text-red-600" : "text-green-600"}>
-                      {budgetData.calculatedBudget.rationale.locationFactor > 1 
-                        ? " increases costs due to higher local prices"
-                        : " helps reduce costs due to lower local prices"}
-                    </span>
-                  </p>
-                </div>
-                <div className="bg-gradient-to-br from-white to-sage-50/30 rounded-lg p-4 border border-sage-200/50 shadow-sm">
-                  <p className="text-sm text-sage-700 font-medium mb-2">Seasonal Impact</p>
-                  <p className="text-sm text-sage-900 font-normal leading-relaxed">
-                    Your wedding date ({budgetData.calculatedBudget.rationale.seasonalFactor}x factor)
-                    <span className={budgetData.calculatedBudget.rationale.seasonalFactor > 1 ? "text-red-600" : "text-green-600"}>
-                      {budgetData.calculatedBudget.rationale.seasonalFactor > 1 
-                        ? " falls during peak season with higher prices"
-                        : " falls during off-peak season with better rates"}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Summary Table */}
-          <Card className="border-sage-200">
-            <CardHeader className="bg-sage-50/50">
-              <CardTitle>Budget Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
               <Table>
                 <TableHeader className="bg-sage-50/50">
                   <TableRow>
                     <TableHead>Category</TableHead>
                     <TableHead>Estimated Cost</TableHead>
-                    <TableHead className="text-right">% of Budget</TableHead>
-                    <TableHead className="text-right">Range</TableHead>
+                    <TableHead>% of Budget</TableHead>
+                    <TableHead className="text-right">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="text-sm text-sage-600">Actions</span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">Click row to view details or use menu for quick actions</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {budgetData.calculatedBudget.categories?.map((category: BudgetCategory) => (
-                    <TableRow key={category.id} className="hover:bg-sage-50/30 transition-colors">
-                      <TableCell className="font-medium text-sage-900">{category.name}</TableCell>
-                      <TableCell className="text-sage-900">{formatCurrency(category.estimatedCost)}</TableCell>
-                      <TableCell className="text-right text-sage-900">{category.percentage}%</TableCell>
-                      <TableCell className="text-right text-sage-700">
-                        {category.ranges ? `${formatCurrency(category.ranges.min)} - ${formatCurrency(category.ranges.max)}` : 'N/A'}
+                  {budgetData.calculatedBudget.categories?.map((category) => (
+                    <TableRow 
+                      key={category.id}
+                      className="cursor-pointer hover:bg-sage-50/30 transition-colors"
+                      onClick={() => {
+                        toggleCategory(category.id);
+                        setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
+                        const element = document.getElementById(`category-details-${category.id}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
+                    >
+                      <TableCell>{category.name}</TableCell>
+                      <TableCell>{formatCurrency(category.estimatedCost)}</TableCell>
+                      <TableCell>{category.percentage}%</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCategory(category.id);
+                              setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
+                              const element = document.getElementById(`category-details-${category.id}`);
+                              if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }}>
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const updatedCategories = budgetData.calculatedBudget.categories.filter(
+                                  c => c.id !== category.id
+                                );
+                                const updatedBudgetData = {
+                                  ...budgetData,
+                                  calculatedBudget: {
+                                    ...budgetData.calculatedBudget,
+                                    categories: updatedCategories
+                                  },
+                                  lastUpdated: new Date().toISOString()
+                                };
+                                budgetStorage.setBudgetData(updatedBudgetData);
+                                setBudgetData(updatedBudgetData);
+                                toast({
+                                  title: "Category Removed",
+                                  description: `${category.name} has been removed from your budget.`
+                                });
+                              }}
+                            >
+                              Remove Category
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
+                  <TableRow className="font-medium">
+                    <TableCell>TOTAL</TableCell>
+                    <TableCell>{formatCurrency(budgetData.calculatedBudget.categories.reduce((sum, cat) => sum + cat.estimatedCost, 0))}</TableCell>
+                    <TableCell>100%</TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
 
-          {/* Detailed Category Breakdown */}
-          {budgetData.calculatedBudget.categories?.map((category: BudgetCategory) => (
-            <Card key={category.id}>
+          {/* Category Details */}
+          {budgetData.calculatedBudget.categories?.map((category) => (
+            <Card key={category.id} id={`category-details-${category.id}`}>
               <CardHeader className="cursor-pointer" onClick={() => toggleCategory(category.id)}>
                 <div className="flex items-center justify-between">
                   <CardTitle className="font-medium tracking-tight">{category.name}</CardTitle>
@@ -936,6 +1250,14 @@ export default function BudgetBreakdownPage() {
           ))}
         </div>
       </div>
+
+      {message && (
+        <div className="mb-4">
+          <Alert>
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+        </div>
+      )}
     </div>
   );
 } 

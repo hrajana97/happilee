@@ -31,6 +31,7 @@ export type BudgetData = {
     state?: string
     country: string
     isDestination: boolean
+    weddingDate?: string
   }
   guestCount: number
   priorities: string[]
@@ -55,6 +56,7 @@ export type BudgetData = {
       state?: string
       country: string
       isDestination: boolean
+      weddingDate?: string
     }
   }
   preferences?: {

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,46 +15,66 @@ import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
+interface BudgetFormData {
+  totalBudget: string;
+  guestCount: string;
+  weddingDate: string;
+  isDestination: boolean;
+  city: string;
+  state: string;
+  country: string;
+  cateringType: string;
+  barType: string;
+  photoVideo: string;
+  coverage: string;
+  floralStyle: string;
+  diyElements: string;
+  musicChoice: string;
+  beautyCoverage: string;
+  planningAssistance: string;
+}
+
 const BudgetSurvey = () => {
-  const [step, setStep] = useState(1);
-  const [budgetData, setBudgetData] = useState({
+  const [step, setStep] = useState(0);
+  const [budgetData, setBudgetData] = useState<BudgetFormData>({
     totalBudget: '',
-    location: '',
     guestCount: '',
     weddingDate: '',
-    venueType: '',
+    isDestination: false,
+    city: '',
+    state: '',
+    country: '',
     cateringType: '',
     barType: '',
-    photography: '',
-    florals: '',
-    entertainment: '',
-    attire: '',
-    logistics: '',
-    planner: '',
-    venueVendors: '',
-    offPeakDates: '',
-    cateringPreference: '',
-    barOptions: '',
     photoVideo: '',
     coverage: '',
     floralStyle: '',
     diyElements: '',
     musicChoice: '',
-    specialPerformances: '',
-    attireBudget: '',
     beautyCoverage: '',
-    guestLogistics: '',
-    weddingFavors: '',
     planningAssistance: '',
-    isDestination: false,
-    city: '',
-    country: '',
-    state: '',
   });
+
+  // Load initial user data
+  useEffect(() => {
+    const userData = storage.getUserData();
+    if (userData) {
+      setBudgetData(prevData => ({
+        ...prevData,
+        totalBudget: userData.budget ? userData.budget.toString() : '',
+        guestCount: userData.guestCount ? userData.guestCount.toString() : '',
+        weddingDate: userData.weddingDate ? userData.weddingDate.split('T')[0] : '',
+      }));
+    }
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setBudgetData((prevData) => ({ ...prevData, [name]: value }));
+    setBudgetData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    setBudgetData(prev => ({ ...prev, isDestination: checked }));
   };
 
   const handleNextStep = () => {
@@ -120,8 +140,9 @@ const BudgetSurvey = () => {
   const loadDemoData = () => {
     const demoData = {
       totalBudget: '50000',
-      city: 'San Francisco',
-      state: 'CA',
+      city: 'Austin',
+      state: 'TX',
+      country: 'United States',
       guestCount: '100',
       weddingDate: '2024-09-15',
       photoVideo: 'Both Photography & Videography',
@@ -140,7 +161,7 @@ const BudgetSurvey = () => {
     const locationData = {
       city: demoData.city,
       state: demoData.state,
-      country: "United States"
+      country: demoData.country
     };
 
     const priorities = ["photography", "entertainment"];
@@ -199,13 +220,72 @@ const BudgetSurvey = () => {
           </div>
         </div>
 
-        <Progress value={(step / 7) * 100} className="mb-8 bg-sage-200 [&>[role=progressbar]]:bg-sage-700" />
+        <div className="flex items-center gap-4 mb-8">
+          <Progress value={((step) / 8) * 100} className="flex-1 bg-sage-200 [&>[role=progressbar]]:bg-sage-700" />
+          <span className="text-sm font-medium text-sage-600">{step + 1}/8</span>
+        </div>
+
+        {step === 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Verify Your Details</CardTitle>
+              <p className="text-sm text-sage-600">
+                We've pulled these details from your initial setup. Please verify they're correct before proceeding.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Wedding Date</Label>
+                <Input
+                  type="date"
+                  name="weddingDate"
+                  value={budgetData.weddingDate}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Guest Count</Label>
+                <Input
+                  type="number"
+                  name="guestCount"
+                  value={budgetData.guestCount}
+                  onChange={handleInputChange}
+                />
+                <p className="text-sm text-sage-600">
+                  This affects venue size, catering costs, and other per-person expenses.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Maximum Budget</Label>
+                <Input
+                  type="text"
+                  name="totalBudget"
+                  value={budgetData.totalBudget}
+                  onChange={handleInputChange}
+                />
+                <p className="text-sm text-sage-600">
+                  This helps us ensure our recommendations stay within your comfort zone.
+                </p>
+              </div>
+
+              <Button 
+                onClick={() => setStep(1)} 
+                className="w-full bg-[#738678] hover:bg-[#738678]/90"
+              >
+                Confirm & Continue
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {step === 1 && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-lg font-medium">General Overview</h2>
-
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>General Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Maximum Budget</Label>
                 <p className="text-sm text-sage-600">What's the maximum amount you're willing to spend on your wedding? This helps us ensure our recommendations stay within your comfort zone. You can always adjust this later.</p>
@@ -223,9 +303,7 @@ const BudgetSurvey = () => {
                   <Checkbox
                     id="destination"
                     checked={budgetData.isDestination}
-                    onCheckedChange={(checked) =>
-                      setBudgetData(prev => ({ ...prev, isDestination: checked }))
-                    }
+                    onCheckedChange={handleCheckboxChange}
                   />
                   <Label htmlFor="destination">This is a destination wedding</Label>
                 </div>
@@ -319,37 +397,38 @@ const BudgetSurvey = () => {
                   </div>
               )}
 
-              <div className="space-y-2">
+                  <div className="space-y-2">
                 <Label>Guest Count</Label>
                 <p className="text-sm text-sage-600">The number of guests impacts catering, venue size, and other per-person costs.</p>
-                <Input
+                    <Input
                   type="number"
                   name="guestCount"
                   placeholder="Guest Count"
                   value={budgetData.guestCount}
                   onChange={handleInputChange}
-                />
-              </div>
+                    />
+                  </div>
 
-                  <div className="space-y-2">
+              <div className="space-y-2">
                 <Label>Wedding Date</Label>
                 <p className="text-sm text-sage-600">Seasonal demand can affect pricing for venues and services.</p>
-                    <Input
+                <Input
                   type="date"
                   name="weddingDate"
                   value={budgetData.weddingDate}
                   onChange={handleInputChange}
-                    />
-                  </div>
+                />
             </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {step === 2 && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-lg font-medium">Photography & Videography</h2>
-
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Photography & Videography</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Photography and videography, or just one?</Label>
                 <p className="text-sm text-sage-600">Capturing memories can be done through photos, videos, or both.</p>
@@ -385,15 +464,16 @@ const BudgetSurvey = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {step === 3 && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-lg font-medium">Decor & Florals</h2>
-
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Decor & Florals</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Floral Style Preference</Label>
                 <p className="text-sm text-sage-600">Floral arrangements can range from simple to extravagant.</p>
@@ -428,16 +508,17 @@ const BudgetSurvey = () => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
-          </div>
+                </div>
+            </CardContent>
+          </Card>
         )}
 
         {step === 4 && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-lg font-medium">Entertainment</h2>
-
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Entertainment</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Music Choice</Label>
                 <p className="text-sm text-sage-600">Music choice can set the tone for your reception.</p>
@@ -454,16 +535,17 @@ const BudgetSurvey = () => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
                 </div>
-                </div>
+            </CardContent>
+          </Card>
         )}
 
         {step === 5 && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-lg font-medium">Attire & Beauty</h2>
-
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Attire & Beauty</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Hair & Makeup Coverage</Label>
                 <p className="text-sm text-sage-600">Decide if you'll cover beauty costs for your party.</p>
@@ -481,15 +563,16 @@ const BudgetSurvey = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {step === 6 && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-lg font-medium">Logistics & Miscellaneous</h2>
-
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Logistics & Miscellaneous</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Wedding Planner</Label>
                 <p className="text-sm text-sage-600">Decide on the level of planning assistance needed.</p>
@@ -512,8 +595,8 @@ const BudgetSurvey = () => {
                 <Label>Catering Style</Label>
                 <p className="text-sm text-sage-600">Choose your preferred dining style for the reception.</p>
                 <Select
-                  value={budgetData.cateringStyle}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, cateringStyle: value }))}
+                  value={budgetData.cateringType}
+                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, cateringType: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select catering style" />
@@ -530,8 +613,8 @@ const BudgetSurvey = () => {
                 <Label>Bar Service</Label>
                 <p className="text-sm text-sage-600">Choose your preferred bar service option.</p>
                 <Select
-                  value={budgetData.barService}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, barService: value }))}
+                  value={budgetData.barType}
+                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, barType: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select bar service" />
@@ -543,14 +626,16 @@ const BudgetSurvey = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {step === 7 && (
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-lg font-medium">Summary</h2>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <p className="text-sm text-sage-600">Review your inputs before we calculate your personalized budget</p>
 
               <Card>
@@ -676,17 +761,17 @@ const BudgetSurvey = () => {
                     </div>
                     <div>
                       <Label className="text-sage-600">Catering Style</Label>
-                      <p className="font-medium">{budgetData.cateringStyle || "Not specified"}</p>
+                      <p className="font-medium">{budgetData.cateringType || "Not specified"}</p>
                     </div>
                     <div>
                       <Label className="text-sage-600">Bar Service</Label>
-                      <p className="font-medium">{budgetData.barService || "Not specified"}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                      <p className="font-medium">{budgetData.barType || "Not specified"}</p>
             </div>
           </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
         )}
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0 pt-8">
