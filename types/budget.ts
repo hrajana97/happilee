@@ -85,3 +85,24 @@ export type LocationData = {
   costFactor: number
 }
 
+export type UserData = {
+  name: string;
+  partnerName?: string;
+  weddingDate: string;
+  budget: number;
+  guestCount: number;
+  calculatedBudget?: any;
+  isDemo?: boolean;
+  preferences?: {
+    cateringStyle?: string;
+    barService?: string;
+    photoVideo?: string;
+    coverage?: string;
+    floralStyle?: string;
+    diyElements?: string;
+    musicChoice?: string;
+    beautyCoverage?: string;
+    planningAssistance?: string;
+  };
+}
+

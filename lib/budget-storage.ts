@@ -102,7 +102,7 @@ const locationCostFactors: Record<string, number> = {
 }
 
 // Define the category types
-type CategoryType = 'venue' | 'catering' | 'photography' | 'attire' | 'flowers' | 'entertainment' | 'stationery' | 'favors' | 'transportation'
+type CategoryType = 'venue' | 'catering' | 'photography' | 'attire' | 'flowers' | 'entertainment' | 'stationery' | 'favors' | 'transportation' | 'hair_makeup'
 
 interface CostRange {
   min: number
@@ -144,7 +144,8 @@ const baseCosts: Record<CategoryType, CostRange> = {
   entertainment: { min: 1800, typical: 2500, max: 4000 },
   stationery: { min: 800, typical: 1000, max: 1500 },
   favors: { min: 800, typical: 1000, max: 1500 },
-  transportation: { min: 800, typical: 1000, max: 2000 }
+  transportation: { min: 800, typical: 1000, max: 2000 },
+  hair_makeup: { min: 800, typical: 1200, max: 2000 }
 }
 
 type CateringStyle = 'Plated' | 'Buffet' | 'Family Style' | 'Food Stations' | 'Heavy Appetizers'
@@ -348,8 +349,11 @@ const isBarService = (value: string): value is BarService =>
 const isPhotoVideo = (value: string): value is PhotoVideo =>
   Object.keys(serviceMultipliers.photography).includes(value)
 
-const isCoverage = (value: string): value is Coverage =>
-  Object.keys(serviceMultipliers.coverage).includes(value)
+const COVERAGE_OPTIONS = ["Full Day Coverage", "Partial Day Coverage", "Ceremony & Portraits Only"] as const;
+
+const isCoverage = (value: string): value is Coverage => {
+  return COVERAGE_OPTIONS.includes(value as Coverage);
+}
 
 const isFloralStyle = (value: string): value is FloralStyle =>
   Object.keys(serviceMultipliers.florals).includes(value)
@@ -471,6 +475,17 @@ const categoryDescriptions: Record<CategoryType, {
       "Book early for better rates",
       "Consider selective transportation"
     ]
+  },
+  hair_makeup: {
+    description: "Professional hair styling and makeup services for the wedding party.",
+    costBreakdown: "70% service costs, 20% products, 10% travel fees",
+    scalingExplanation: "Costs scale with number of people receiving services and whether trials are included.",
+    budgetingTips: [
+      "Book trials strategically to save on travel fees",
+      "Consider group discounts for larger parties",
+      "Prioritize key members for professional services",
+      "Book early for better availability and rates"
+    ]
   }
 }
 
@@ -508,43 +523,74 @@ const calculateBudgetRanges = (
     entertainment: 1.0,
     stationery: 1.0,
     favors: 1.0,
-    transportation: 1.0
+    transportation: 1.0,
+    hair_makeup: 1.0
   }
   
-  // Calculate base multipliers
-  const baseLocationFactor = locationFactor
-  const baseSeasonalFactor = seasonalFactor
+  // Calculate base multipliers with caps
+  const baseLocationFactor = Math.min(locationFactor, 2.0) // Cap location factor
+  const baseSeasonalFactor = seasonalFactor // Already capped between 1.0-1.2
   const baseGuestFactor = calculateGuestFactor(guestCount)
   const baseStaffingFactor = calculateStaffingFactor(guestCount)
 
-  // Calculate service style multipliers
+  // Calculate service style multipliers with realistic combinations
   const serviceMultipliersEffect = {
-    venue: 1.0,
-    catering: preferences.cateringStyle && isCateringStyle(preferences.cateringStyle) ? serviceMultipliers.catering[preferences.cateringStyle] : 1.0,
-    photography: preferences.photoVideo && isPhotoVideo(preferences.photoVideo) ? serviceMultipliers.photography[preferences.photoVideo] : 1.0,
-    attire: 1.0,
-    flowers: preferences.floralStyle && isFloralStyle(preferences.floralStyle) ? serviceMultipliers.florals[preferences.floralStyle] : 1.0,
-    entertainment: preferences.musicChoice && isMusicChoice(preferences.musicChoice) ? serviceMultipliers.music[preferences.musicChoice] : 1.0,
+    venue: 1.0, // Venue is primarily affected by location and season
+    catering: preferences.cateringStyle && isCateringStyle(preferences.cateringStyle) 
+      ? (serviceMultipliers.catering[preferences.cateringStyle] * 0.7 + 0.3) // Weighted to prevent extreme variations
+      : 1.0,
+    photography: preferences.photoVideo && isPhotoVideo(preferences.photoVideo) && preferences.coverage && isCoverage(preferences.coverage)
+      ? Math.min(
+          // Take the higher of the two multipliers and add a small boost if both are high-end
+          Math.max(
+            serviceMultipliers.photography[preferences.photoVideo],
+            serviceMultipliers.coverage[preferences.coverage]
+          ) * 0.8 + 
+          (serviceMultipliers.photography[preferences.photoVideo] > 1.2 && 
+           serviceMultipliers.coverage[preferences.coverage] > 1.1 ? 0.2 : 0),
+          1.8 // Hard cap on photography multiplier
+        )
+      : 1.0,
+    flowers: preferences.floralStyle && isFloralStyle(preferences.floralStyle)
+      ? (serviceMultipliers.florals[preferences.floralStyle] * 0.8 + 0.2) // Weighted to prevent extreme variations
+      : 1.0,
+    entertainment: preferences.musicChoice && isMusicChoice(preferences.musicChoice)
+      ? Math.min(serviceMultipliers.music[preferences.musicChoice], 1.8) // Cap entertainment increase
+      : 1.0,
+    attire: 1.0, // Attire costs don't scale with other factors
     stationery: 1.0,
     favors: 1.0,
-    transportation: 1.0
+    transportation: 1.0,
+    hair_makeup: 1.0
   }
 
-  // First pass: Calculate initial multipliers for each category
-  const MAX_CATEGORY_MULTIPLIER = 2.5 // Cap individual categories at 2.5x
+  // First pass: Calculate initial multipliers for each category using weighted combinations
+  const MAX_CATEGORY_MULTIPLIER = 2.0 // More conservative cap
   
   Object.keys(baseCosts).forEach((category) => {
     const cat = category as CategoryType
-    let totalMultiplier = baseLocationFactor * baseSeasonalFactor * serviceMultipliersEffect[cat]
     
-    // Add guest count scaling where applicable
+    // Use weighted averages instead of pure multiplication for more realistic scaling
+    let totalMultiplier = 1.0
+    
+    // Location and seasonal factors (weighted)
     if (['venue', 'catering', 'transportation'].includes(cat)) {
-      totalMultiplier *= baseGuestFactor
+      totalMultiplier *= (baseLocationFactor * 0.7 + baseSeasonalFactor * 0.3)
+    } else {
+      totalMultiplier *= (baseLocationFactor * 0.3 + 0.7) // Other categories less affected by location
     }
     
-    // Add staffing factor where applicable
+    // Service style multipliers
+    totalMultiplier *= serviceMultipliersEffect[cat]
+    
+    // Guest count scaling (with diminishing returns)
+    if (['venue', 'catering', 'transportation'].includes(cat)) {
+      totalMultiplier *= (baseGuestFactor * 0.8 + 0.2) // Weighted to prevent extreme scaling
+    }
+    
+    // Staffing factor (only where relevant)
     if (['catering', 'photography', 'entertainment'].includes(cat)) {
-      totalMultiplier *= baseStaffingFactor
+      totalMultiplier *= (baseStaffingFactor * 0.6 + 0.4) // Weighted to prevent extreme scaling
     }
     
     // Cap individual category multiplier

@@ -119,7 +119,9 @@ const BudgetSurvey = () => {
       const locationData = {
         city: budgetData.city,
         state: budgetData.state,
-        country: budgetData.isDestination ? budgetData.country : "United States"
+        country: budgetData.isDestination ? budgetData.country : "United States",
+        weddingDate: budgetData.weddingDate,
+        isDestination: budgetData.isDestination
       };
 
       // Create priorities array based on user selections
@@ -138,15 +140,34 @@ const BudgetSurvey = () => {
         priorities.push("planner");
       }
 
-      // Calculate the budget
-      const result = budgetStorage.calculateBudget(totalBudget, locationData, priorities);
+      // Create preferences object
+      const preferences = {
+        cateringStyle: budgetData.cateringType,
+        barService: budgetData.barType,
+        photoVideo: budgetData.photoVideo,
+        coverage: budgetData.coverage,
+        floralStyle: budgetData.floralStyle,
+        diyElements: budgetData.diyElements,
+        musicChoice: budgetData.musicChoice,
+        beautyCoverage: budgetData.beautyCoverage,
+        planningAssistance: budgetData.planningAssistance
+      };
+
+      // Calculate the budget with preferences
+      const result = budgetStorage.calculateBudget(
+        parseInt(budgetData.guestCount) || 0,
+        locationData,
+        priorities,
+        preferences
+      );
 
       // Store the result in localStorage for the breakdown page
       storage.setUserData({
         budget: totalBudget,
         weddingDate: budgetData.weddingDate,
         guestCount: parseInt(budgetData.guestCount) || 0,
-        calculatedBudget: result
+        calculatedBudget: result,
+        preferences: preferences
       });
 
       // Navigate to the budget breakdown page

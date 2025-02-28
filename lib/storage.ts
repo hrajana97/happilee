@@ -1,12 +1,4 @@
-export interface UserData {
-  name: string
-  partnerName?: string
-  weddingDate: string
-  budget: number
-  guestCount: number
-  calculatedBudget?: any // Budget calculation result from budgetStorage
-  isDemo?: boolean
-}
+import type { BudgetPreferences, CalculatedBudget, UserData } from "@/types/budget";
 
 const isBrowser = typeof window !== 'undefined'
 

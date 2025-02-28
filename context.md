@@ -24,6 +24,56 @@ Key features:
 - Cost range validation and warnings
 - Export functionality (CSV/Excel)
 
+Budget Calculation Factors:
+1. **Location Cost Factors**
+   - Major cities have specific multipliers (e.g., San Francisco: 2.0x, New York: 2.0x)
+   - International destinations have unique factors (e.g., Paris: 2.2x, London: 2.3x)
+   - Default US locations: 1.0x
+
+2. **Seasonal Factors**
+   - Peak season (June-September): 1.2x
+   - Shoulder season (April-May, October): 1.1x
+   - Off season (November-March): 1.0x
+
+3. **Service Style Multipliers**
+   - Catering: Plated (1.3x), Buffet (1.0x), Family Style (1.2x)
+   - Bar Service: Full Open Bar (1.3x), Beer & Wine (0.8x), No Alcohol (0x)
+   - Photography: Both Photo & Video (1.5x), Photo Only (1.0x)
+   - Floral Style: Elaborate (1.5x), Modern Minimalist (0.9x)
+   - Music: Live Band (1.8x), DJ (1.0x), Playlist Only (0.2x)
+
+4. **Guest Count Scaling**
+   - Different categories scale differently with guest count:
+     - Catering: 80% variable, 10% fixed, 10% staffing
+     - Venue: 70% fixed, 20% variable, 10% staffing
+     - Photography: 80% fixed, 10% variable, 10% staffing
+   - Staffing factors increase with guest count:
+     - ≤50 guests: 1.0x
+     - 51-100 guests: 1.2x
+     - 101-150 guests: 1.4x
+     - 151-200 guests: 1.6x
+     - 201-300 guests: 1.8x
+     - >300 guests: 2.0x
+
+Budget Categories:
+- Venue
+- Catering
+- Photography
+- Attire
+- Flowers
+- Entertainment
+- Stationery
+- Favors
+- Transportation
+
+Each category includes:
+- Percentage of total budget
+- Estimated cost range (min/typical/max)
+- Priority level (high/medium/low)
+- Budgeting tips
+- Cost breakdown explanation
+- Scaling rationale
+
 #### Moodboard System
 - `app/dashboard/moodboard/[category]/page.tsx`: Category-specific moodboards
 - `components/moodboard/swipe-card.tsx`: Tinder-style image swiping
@@ -35,10 +85,73 @@ Features:
 - Tag-based organization
 - Share and collaboration features
 
+Moodboard Categories:
+1. **Decor & Florals**
+   - Style options: Modern Minimalist, Romantic Garden, Bohemian Wildflowers, etc.
+   - Color palette extraction from selected images
+   - Automatic style description generation
+   - Budget impact suggestions
+
+2. **Venue**
+   - Indoor/Outdoor categorization
+   - Venue style matching
+   - Capacity and location filtering
+   - Seasonal availability indicators
+
+3. **Haldi**
+   - Traditional elements
+   - Modern interpretations
+   - Cultural significance notes
+   - Color scheme suggestions
+
+4. **Reception**
+   - Layout options
+   - Lighting schemes
+   - Entertainment spaces
+   - Guest flow considerations
+
+Image Management:
+- Automatic color palette extraction
+- Style categorization
+- User tagging system
+- Favorites collection
+- Share functionality with copy-to-clipboard
+
+User Interface Features:
+- Keyboard navigation (left/right arrows)
+- Touch gestures for mobile
+- Responsive grid layouts
+- Progressive image loading
+- Hover states with metadata
+- Dialog-based sharing
+
+Data Structures:
+```typescript
+interface FlowerImage {
+  id: string
+  url: string
+  style: string
+  description: string
+  colors: string[]
+}
+
+interface ColorPalette {
+  primary: string
+  secondary: string
+  accent: string[]
+}
+
+type MoodboardCategory = {
+  id: string
+  name: string
+  coverImage: string
+}
+```
+
 ### Data Models
 
 #### Budget Data Structure
-\`\`\`typescript
+```typescript
 interface BudgetData {
   totalBudget: number;
   location: {
@@ -59,10 +172,10 @@ interface BudgetData {
     };
   };
 }
-\`\`\`
+```
 
 #### User Data Structure
-\`\`\`typescript
+```typescript
 interface UserData {
   name: string;
   partnerName?: string;
@@ -71,7 +184,30 @@ interface UserData {
   guestCount: number;
   calculatedBudget?: any;
 }
-\`\`\`
+```
+
+#### Moodboard Data Structures
+```typescript
+interface FlowerImage {
+  id: string;
+  url: string;
+  style: string;
+  description: string;
+  colors: string[];
+}
+
+interface ColorPalette {
+  primary: string;
+  secondary: string;
+  accent: string[];
+}
+
+type MoodboardCategory = {
+  id: string;
+  name: string;
+  coverImage: string;
+}
+```
 
 ## Key Design Decisions
 
@@ -181,4 +317,4 @@ interface UserData {
 - [Design System Documentation](link-to-docs)
 - [API Documentation](link-to-api-docs)
 - [Component Storybook](link-to-storybook)
-- [Testing Guidelines](link-to-testing-docs) 
+- [Testing Guidelines](link-to-testing-docs)
