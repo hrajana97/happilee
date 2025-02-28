@@ -1,140 +1,184 @@
-# Happilee Codebase Context
+# Happilee - Wedding Planning Application
 
 ## Overview
-Happilee is a wedding planning application built with Next.js for the frontend and Express for the backend API. The application helps couples plan their wedding by managing vendors, budgets, timelines, and other wedding-related tasks.
+Happilee is a modern wedding planning application that helps couples plan their perfect wedding using AI-powered tools and expert guidance. The application provides features for budget management, moodboard creation, vendor management, and more.
 
-## Directory Structure
+## Architecture
 
-### Frontend (Root Directory)
+### Tech Stack
+- **Frontend**: Next.js 13+ with App Router
+- **UI Components**: Shadcn/UI with Tailwind CSS
+- **State Management**: React Hooks and Local Storage
+- **Styling**: Tailwind CSS with custom sage-themed color palette
 
-#### `/app` - Next.js App Router
-- `/dashboard` - Main dashboard views for wedding planning
-- `/login` - Authentication pages
-- `/onboarding` - User onboarding flow
-- `layout.tsx` - Root layout with common UI elements
-- `error.tsx` - Global error handling
-- `loading.tsx` - Loading states
+### Key Components
 
-#### `/components`
-- `/assistant` - AI assistant related components
-- `/auth` - Authentication components
-- `/budget` - Budget management components
-- `/contracts` - Contract management UI
-- `/dashboard` - Dashboard specific components
-- `/home` - Landing page components
-- `/moodboard` - Wedding style and inspiration components
-- `/tutorial` - Onboarding tutorial components
-- `/ui` - Reusable UI components
-- `/vendors` - Vendor management components
+#### Budget Management
+- `app/dashboard/budget/page.tsx`: Budget questionnaire and initial setup
+- `app/budget-breakdown/page.tsx`: Detailed budget breakdown and management
+- `lib/budget-storage.ts`: Budget calculation and storage logic
 
-#### `/hooks`
-Custom React hooks for:
-- State management
-- API interactions
-- UI utilities
-- Mobile responsiveness
+Key features:
+- Dynamic budget calculation based on location, guest count, and preferences
+- Real-time budget adjustments with category-level editing
+- Cost range validation and warnings
+- Export functionality (CSV/Excel)
 
-#### `/lib`
-Shared utilities and helpers:
-- API client functions
-- Authentication utilities
-- Storage helpers
-- Type definitions
-- Constants
+#### Moodboard System
+- `app/dashboard/moodboard/[category]/page.tsx`: Category-specific moodboards
+- `components/moodboard/swipe-card.tsx`: Tinder-style image swiping
+- `components/moodboard/color-palette.tsx`: Color palette management
 
-#### `/styles`
-- Global styles
-- Tailwind configurations
-- Theme definitions
+Features:
+- Swipeable interface for style selection
+- Automatic color palette generation
+- Tag-based organization
+- Share and collaboration features
 
-#### `/public`
-Static assets:
-- Images
-- Fonts
-- Icons
-- Other media files
+### Data Models
 
-### Backend (`/api`)
-Express.js backend service:
-- RESTful API endpoints
-- Authentication
-- Database interactions
-- Business logic
+#### Budget Data Structure
+\`\`\`typescript
+interface BudgetData {
+  totalBudget: number;
+  location: {
+    city: string;
+    state?: string;
+    country: string;
+    isDestination: boolean;
+  };
+  guestCount: number;
+  categories: BudgetCategory[];
+  calculatedBudget: {
+    categories: BudgetCategory[];
+    rationale: {
+      totalBudget: string;
+      locationFactor: number;
+      seasonalFactor: number;
+      notes: string[];
+    };
+  };
+}
+\`\`\`
 
-## Key Features
+#### User Data Structure
+\`\`\`typescript
+interface UserData {
+  name: string;
+  partnerName?: string;
+  weddingDate: string;
+  budget: number;
+  guestCount: number;
+  calculatedBudget?: any;
+}
+\`\`\`
 
-1. **Wedding Planning Dashboard**
-   - Timeline management
-   - Task tracking
-   - Progress overview
+## Key Design Decisions
 
-2. **Vendor Management**
-   - Vendor directory
-   - Communication tools
-   - Contract management
+### 1. Local-First Architecture
+- Uses browser localStorage for data persistence
+- Enables offline functionality
+- Quick response times for budget calculations
 
-3. **Budget Tracking**
-   - Expense categories
-   - Payment tracking
-   - Budget analytics
+### 2. Progressive Enhancement
+- Basic functionality works without JavaScript
+- Enhanced features (like real-time updates) added when available
+- Responsive design works across all device sizes
 
-4. **Design & Inspiration**
-   - Moodboards
-   - Style guides
-   - Color schemes
+### 3. User Experience
+- Step-by-step questionnaires for complex tasks
+- Real-time feedback for budget changes
+- Clear validation messages and warnings
+- Intuitive swipe interface for style selection
 
-5. **Guest Management**
-   - Guest list
-   - RSVP tracking
-   - Seating arrangements
+### 4. Performance Optimizations
+- Lazy loading of images and heavy components
+- Efficient budget calculations
+- Debounced user inputs
+- Optimized re-renders using React.memo and useMemo
 
-## Technical Stack
+## Future Improvements
 
-### Frontend
-- Next.js 14
-- React
-- TypeScript
-- Tailwind CSS
-- ShadcnUI Components
+### Planned Features
+1. **AI Integration**
+   - Smart budget recommendations
+   - Style preference learning
+   - Automated vendor matching
 
-### Backend
-- Express.js
-- Node.js
-- RESTful API
+2. **Collaboration**
+   - Multi-user editing
+   - Vendor collaboration portal
+   - Shared moodboards
 
-### Infrastructure
-- Docker containerization
-- Development and production configurations
-- Hot reloading setup
-- Environment-specific optimizations
+3. **Enhanced Analytics**
+   - Budget tracking over time
+   - Spending pattern analysis
+   - Regional cost comparisons
 
-## Development Patterns
+### Technical Debt
+1. **Type Safety**
+   - Add stricter TypeScript types
+   - Implement runtime type checking
+   - Add API response validation
 
-1. **Component Organization**
-   - Feature-based directory structure
-   - Shared UI components in `/ui`
-   - Page-specific components in feature directories
+2. **Testing**
+   - Add unit tests for budget calculations
+   - Add integration tests for user flows
+   - Add E2E tests for critical paths
 
-2. **State Management**
-   - React hooks for local state
-   - Custom hooks for shared logic
-   - Context for global state
+3. **Performance**
+   - Implement proper caching strategy
+   - Optimize large component renders
+   - Add performance monitoring
 
-3. **Styling**
-   - Tailwind for utility-first CSS
-   - Component-specific styles when needed
-   - Global styles for common elements
+## Development Guidelines
 
-4. **API Integration**
-   - Centralized API client
-   - Type-safe API calls
-   - Error handling middleware
+### Code Style
+- Use TypeScript for all new code
+- Follow functional programming principles
+- Use React hooks for state management
+- Keep components small and focused
 
-## Configuration Files
+### Component Structure
+- Place shared components in `/components`
+- Place page-specific components near their pages
+- Use composition over inheritance
+- Follow atomic design principles
 
-- `next.config.mjs` - Next.js configuration
-- `tailwind.config.ts` - Tailwind CSS setup
-- `tsconfig.json` - TypeScript configuration
-- `docker-compose.yml` - Production Docker setup
-- `docker-compose.dev.yml` - Development Docker setup
-- `Dockerfile` - Container build instructions 
+### State Management
+- Use React Context for global state
+- Use local state for component-specific data
+- Use URL state for shareable data
+- Cache appropriately in localStorage
+
+### Styling
+- Use Tailwind CSS utility classes
+- Follow BEM-like naming for custom classes
+- Use CSS variables for theming
+- Maintain consistent spacing scale
+
+## Deployment
+
+### Environment Setup
+1. Install Node.js 18+
+2. Install dependencies: `npm install`
+3. Set up environment variables
+4. Run development server: `npm run dev`
+
+### Build Process
+1. Run type checking: `npm run type-check`
+2. Run tests: `npm run test`
+3. Build production: `npm run build`
+4. Deploy: `npm run deploy`
+
+## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make changes and add tests
+4. Submit a pull request
+
+## Resources
+- [Design System Documentation](link-to-docs)
+- [API Documentation](link-to-api-docs)
+- [Component Storybook](link-to-storybook)
+- [Testing Guidelines](link-to-testing-docs) 

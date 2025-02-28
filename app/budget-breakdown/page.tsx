@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { storage } from "@/lib/storage";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronDown, ChevronUp, FileSpreadsheet, Download, Calendar, Users, MapPin, Plus, MoreVertical } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, FileSpreadsheet, Download, Calendar, Users, MapPin, Plus, MoreVertical, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import type { BudgetCategory, BudgetData } from "@/types/budget";
 import {
@@ -36,6 +36,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface ValidationResult {
   isValid: boolean;
@@ -51,6 +61,7 @@ interface UserData {
     state?: string;
     country: string;
     isDestination: boolean;
+    weddingDate: string;
   };
   guestCount: number;
   priorities: string[];
@@ -75,8 +86,10 @@ interface UserData {
       state?: string;
       country: string;
       isDestination: boolean;
+      weddingDate: string;
     };
   };
+  weddingDate: string;
 }
 
 export default function BudgetBreakdownPage() {
@@ -90,12 +103,17 @@ export default function BudgetBreakdownPage() {
     city: '',
     state: '',
     country: '',
-    isDestination: false
+    isDestination: false,
+    budget: 0
   });
   const [impactedCategories, setImpactedCategories] = useState<string[]>([]);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [isHowToUseExpanded, setIsHowToUseExpanded] = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>('card');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editedAmount, setEditedAmount] = useState<number | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     try {
@@ -105,11 +123,12 @@ export default function BudgetBreakdownPage() {
         const transformedData: BudgetData = {
           totalBudget: userData.budget || 0,
           budget: userData.budget || 0,
-          location: userData.calculatedBudget.location || {
-            city: "Austin",
-            state: "Texas",
-            country: "United States",
-            isDestination: false
+          location: {
+            city: userData.calculatedBudget.location?.city || "",
+            state: userData.calculatedBudget.location?.state || "",
+            country: userData.calculatedBudget.location?.country || "United States",
+            isDestination: userData.calculatedBudget.location?.isDestination || false,
+            weddingDate: userData.weddingDate
           },
           guestCount: userData.guestCount || 0,
           priorities: [],
@@ -117,8 +136,8 @@ export default function BudgetBreakdownPage() {
           lastUpdated: new Date().toISOString(),
           rationale: {
             totalBudget: (userData.budget || 0).toString(),
-            locationFactor: 1,
-            seasonalFactor: 1,
+            locationFactor: userData.calculatedBudget.rationale?.locationFactor || 1,
+            seasonalFactor: userData.calculatedBudget.rationale?.seasonalFactor || 1,
             notes: []
           },
           calculatedBudget: {
@@ -129,7 +148,13 @@ export default function BudgetBreakdownPage() {
               seasonalFactor: userData.calculatedBudget.rationale?.seasonalFactor || 1,
               notes: []
             },
-            location: userData.calculatedBudget.location
+            location: userData.calculatedBudget.location || {
+              city: userData.calculatedBudget.location?.city || "",
+              state: userData.calculatedBudget.location?.state || "",
+              country: userData.calculatedBudget.location?.country || "United States",
+              isDestination: userData.calculatedBudget.location?.isDestination || false,
+              weddingDate: userData.weddingDate
+            }
           }
         };
         setBudgetData(transformedData);
@@ -149,7 +174,8 @@ export default function BudgetBreakdownPage() {
         city: budgetData.calculatedBudget.location?.city || '',
         state: budgetData.calculatedBudget.location?.state || '',
         country: budgetData.calculatedBudget.location?.country || '',
-        isDestination: budgetData.calculatedBudget.location?.isDestination || false
+        isDestination: budgetData.calculatedBudget.location?.isDestination || false,
+        budget: budgetData.budget
       });
     }
   }, [budgetData]);
@@ -274,50 +300,96 @@ export default function BudgetBreakdownPage() {
 
   const handlePreferenceUpdate = async () => {
     try {
-      // Get the current budget data
-      const currentData = await budgetStorage.getBudgetData();
-      if (!currentData) return;
-
-      // Update location data
-      const locationData = {
-        city: editedPreferences.city,
-        state: editedPreferences.state,
-        country: editedPreferences.country,
-        isDestination: editedPreferences.isDestination,
-      };
-
-      // Recalculate budget with new preferences
-      const recalculatedBudget = budgetStorage.calculateBudget(
-        editedPreferences.guestCount,
-        locationData,
-        currentData.priorities,
-        currentData.preferences
-      );
-
-      // Update the budget data
-      const updatedBudgetData = {
-        ...currentData,
-        guestCount: editedPreferences.guestCount,
-        weddingDate: editedPreferences.weddingDate,
-        calculatedBudget: recalculatedBudget,
-        lastUpdated: new Date().toISOString()
-      };
-
-      await budgetStorage.setBudgetData(updatedBudgetData);
-      setBudgetData(updatedBudgetData);
-      setIsEditingPreferences(false);
+      // Validate required fields
+      const errors: Record<string, string> = {};
+      if (!editedPreferences.city.trim()) {
+        errors.city = 'City is required';
+      }
+      if (!editedPreferences.isDestination && !editedPreferences.state.trim()) {
+        errors.state = 'State is required for non-destination weddings';
+      }
       
-      toast({
-        title: "Budget Updated",
-        description: "Your budget has been recalculated based on the new preferences.",
+      if (Object.keys(errors).length > 0) {
+        setValidationErrors(errors);
+        toast({
+          title: "Missing Information",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsUpdating(true);
+      setValidationErrors({});
+
+      const locationData = {
+        city: editedPreferences.city.trim(),
+        state: editedPreferences.state.trim(),
+        country: editedPreferences.country || 'United States',
+        isDestination: editedPreferences.isDestination,
+        weddingDate: editedPreferences.weddingDate,
+      };
+
+      const userData = {
+        guestCount: editedPreferences.guestCount,
+        budget: editedPreferences.budget,
+      };
+
+      const response = await fetch('/api/budget/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          location: locationData,
+          ...userData,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update preferences');
+      }
+
+      const updatedData = await response.json();
+      setBudgetData(updatedData);
+      setIsEditingPreferences(false); // Close the edit mode after successful update
+
+      // Calculate percentage change in total budget
+      const oldTotal = budgetData?.calculatedBudget?.categories.reduce((sum: number, cat: BudgetCategory) => sum + cat.estimatedCost, 0) || 0;
+      const newTotal = updatedData.calculatedBudget?.categories.reduce((sum: number, cat: BudgetCategory) => sum + cat.estimatedCost, 0) || 0;
+      const percentageChange = ((newTotal - oldTotal) / oldTotal) * 100;
+
+      // Generate explanation for changes
+      let explanation = '';
+      if (editedPreferences.guestCount !== budgetData?.guestCount) {
+        explanation += `Guest count changed from ${budgetData?.guestCount} to ${editedPreferences.guestCount}. `;
+      }
+      if (editedPreferences.budget !== budgetData?.budget) {
+        explanation += `Budget changed from $${budgetData?.budget.toLocaleString()} to $${editedPreferences.budget.toLocaleString()}. `;
+      }
+      if (editedPreferences.weddingDate !== budgetData?.calculatedBudget.location?.weddingDate) {
+        explanation += 'Wedding date updated. ';
+      }
+      if (editedPreferences.city !== budgetData?.calculatedBudget.location?.city ||
+          editedPreferences.state !== budgetData?.calculatedBudget.location?.state) {
+        explanation += 'Location updated. ';
+      }
+
+      toast({
+        title: 'Changes saved successfully',
+        description: `${explanation}Estimated costs ${percentageChange >= 0 ? 'increased' : 'decreased'} by ${Math.abs(percentageChange).toFixed(1)}%.`,
+        variant: 'default',
+      });
+
     } catch (error) {
       console.error('Error updating preferences:', error);
       toast({
-        title: "Update Failed",
-        description: "There was an error updating your preferences. Please try again.",
-        variant: "destructive"
+        title: 'Error saving changes',
+        description: 'Please try again.',
+        variant: 'destructive',
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -473,9 +545,9 @@ export default function BudgetBreakdownPage() {
     });
   };
 
-  const locationDisplay = budgetData?.calculatedBudget?.location?.city 
-    ? `${budgetData.calculatedBudget.location.city}, ${budgetData.calculatedBudget.location.state}`
-    : "Austin, Texas";
+  const locationDisplay = budgetData?.location?.city && budgetData?.location?.state
+    ? `${budgetData.location.city}, ${budgetData.location.state}`
+    : budgetData?.location?.city || "Location not set";
 
   // Add new function to check budget overage
   const checkBudgetOverage = () => {
@@ -563,7 +635,23 @@ export default function BudgetBreakdownPage() {
         <h1 className="text-xl font-semibold mb-4">No Budget Data Found</h1>
         <p className="text-sage-600 mb-6">Please complete the budget questionnaire first.</p>
         <Button asChild>
-          <Link href="/dashboard">Return to Dashboard</Link>
+          <Link 
+            href={{
+              pathname: '/dashboard/budget',
+              query: { 
+                step: 'final',
+                prefill: 'true',
+                budget: budgetData?.totalBudget,
+                guestCount: budgetData?.guestCount,
+                city: budgetData?.location?.city,
+                state: budgetData?.location?.state,
+                isDestination: budgetData?.location?.country !== 'United States',
+                weddingDate: budgetData?.calculatedBudget?.location?.weddingDate
+              }
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
         </Button>
       </div>
     );
@@ -571,12 +659,29 @@ export default function BudgetBreakdownPage() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-sage-100/80 via-[#E8F3E9] to-white p-4 sm:p-8">
-      <div className="mx-auto max-w-4xl">
+      <div className={cn(
+        "mx-auto",
+        viewMode === 'spreadsheet' ? 'max-w-7xl' : 'max-w-4xl'
+      )}>
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-8">
               <Button variant="ghost" size="icon" asChild>
-                <Link href="/dashboard">
+                <Link 
+                  href={{
+                    pathname: '/dashboard/budget',
+                    query: { 
+                      step: 'final',
+                      prefill: 'true',
+                      budget: budgetData?.totalBudget,
+                      guestCount: budgetData?.guestCount,
+                      city: budgetData?.location?.city,
+                      state: budgetData?.location?.state,
+                      isDestination: budgetData?.location?.country !== 'United States',
+                      weddingDate: budgetData?.calculatedBudget?.location?.weddingDate
+                    }
+                  }}
+                >
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
               </Button>
@@ -587,24 +692,77 @@ export default function BudgetBreakdownPage() {
                 </p>
               </div>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="bg-gradient-to-r from-sage-50 to-sage-100 hover:from-sage-100 hover:to-sage-200 text-sage-700 border-sage-200 shadow-sm">
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={exportToCSV}>
-                  <Download className="h-4 w-4 mr-2" />
-                  <span>Export to Google Sheets (CSV)</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={exportToExcel}>
-                  <Download className="h-4 w-4 mr-2" />
-                  <span>Export to Excel</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setViewMode(viewMode === 'card' ? 'spreadsheet' : 'card')}
+                className="bg-gradient-to-r from-sage-50 to-sage-100 hover:from-sage-100 hover:to-sage-200 text-sage-700 border-sage-200 shadow-sm"
+              >
+                {viewMode === 'card' ? (
+                  <>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Spreadsheet View
+                  </>
+                ) : (
+                  <>
+                    <LayoutGrid className="h-4 w-4 mr-2" />
+                    Card View
+                  </>
+                )}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="bg-gradient-to-r from-sage-50 to-sage-100 hover:from-sage-100 hover:to-sage-200 text-sage-700 border-sage-200 shadow-sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={exportToCSV}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    <span>Export to Google Sheets (CSV)</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToExcel}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    <span>Export to Excel</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="bg-gradient-to-r from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-700 border-red-200 shadow-sm"
+                  >
+                    Start Over
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Start Over?</DialogTitle>
+                    <DialogDescription>
+                      This will clear all your budget data and preferences. This action cannot be undone.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex justify-end gap-2">
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => {
+                        storage.clearUserData();
+                        window.location.href = '/dashboard/budget';
+                      }}
+                    >
+                      Yes, Start Over
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           
           <Card className="mb-6 border-sage-200/50 shadow-lg overflow-hidden">
@@ -672,153 +830,6 @@ export default function BudgetBreakdownPage() {
             </Alert>
           )}
 
-          {/* Quick Edit Card */}
-          <Card className="border-sage-200/50 shadow-lg overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-[#2C3A2D]">Quick Edit Key Details</CardTitle>
-                  <CardDescription className="text-sage-600">
-                    Adjust these key factors to see how they affect your budget
-                  </CardDescription>
-                </div>
-                {!isEditingPreferences ? (
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setIsEditingPreferences(true)}
-                    className="bg-gradient-to-r from-sage-50 to-sage-100 hover:from-sage-100 hover:to-sage-200 text-sage-700 border-sage-200 shadow-sm"
-                  >
-                    Edit Details
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setIsEditingPreferences(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handlePreferenceUpdate}
-                      className="bg-gradient-to-r from-sage-600 to-sage-700 text-white hover:from-sage-700 hover:to-sage-800"
-                    >
-                      Save Changes
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6 bg-gradient-to-br from-white to-sage-50/30 p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Guest Count */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-sage-600" />
-                    <Label>Guest Count</Label>
-                  </div>
-                  {isEditingPreferences ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-sage-600">Guests: {editedPreferences.guestCount}</span>
-                        <span className="text-sm text-sage-600">Cost per guest: {formatCurrency(budgetData?.budget / editedPreferences.guestCount)}</span>
-                      </div>
-                      <Slider
-                        value={[editedPreferences.guestCount]}
-                        min={10}
-                        max={500}
-                        step={5}
-                        onValueChange={(value) => setEditedPreferences(prev => ({
-                          ...prev,
-                          guestCount: value[0]
-                        }))}
-                        className="w-full"
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-lg font-medium text-sage-900">{budgetData?.guestCount} guests</p>
-                  )}
-                  <p className="text-sm text-sage-600">Guest count significantly impacts catering, venue, and favor costs</p>
-                </div>
-
-                {/* Wedding Date */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-sage-600" />
-                    <Label>Wedding Date</Label>
-                  </div>
-                  {isEditingPreferences ? (
-                    <Input
-                      type="date"
-                      value={editedPreferences.weddingDate}
-                      onChange={(e) => setEditedPreferences(prev => ({
-                        ...prev,
-                        weddingDate: e.target.value
-                      }))}
-                      className="w-full"
-                    />
-                  ) : (
-                    <p className="text-lg font-medium text-sage-900">
-                      {budgetData?.calculatedBudget?.location?.weddingDate 
-                        ? new Date(budgetData.calculatedBudget.location.weddingDate).toLocaleDateString()
-                        : 'Not set'}
-                    </p>
-                  )}
-                  <p className="text-sm text-sage-600">Season affects venue and vendor availability and pricing</p>
-                </div>
-
-                {/* Location */}
-                <div className="space-y-2 md:col-span-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-sage-600" />
-                    <Label>Location</Label>
-                  </div>
-                  {isEditingPreferences ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <Input
-                        placeholder="City"
-                        value={editedPreferences.city}
-                        onChange={(e) => setEditedPreferences(prev => ({
-                          ...prev,
-                          city: e.target.value
-                        }))}
-                      />
-                      <Select
-                        value={editedPreferences.state}
-                        onValueChange={(value) => setEditedPreferences(prev => ({
-                          ...prev,
-                          state: value
-                        }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select state" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {/* Add state options */}
-                          <SelectItem value="CA">California</SelectItem>
-                          <SelectItem value="NY">New York</SelectItem>
-                          {/* Add more states */}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        placeholder="Country"
-                        value={editedPreferences.country}
-                        onChange={(e) => setEditedPreferences(prev => ({
-                          ...prev,
-                          country: e.target.value
-                        }))}
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-lg font-medium text-sage-900">
-                      {locationDisplay}
-                    </p>
-                  )}
-                  <p className="text-sm text-sage-600">Location impacts vendor availability and regional pricing variations</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Budget Overview & Summary */}
           <Card className="border-sage-200">
             <CardHeader className="bg-sage-50/50">
@@ -834,6 +845,7 @@ export default function BudgetBreakdownPage() {
                       </TooltipTrigger>
                       <TooltipContent className="w-[300px] p-4">
                         <div className="space-y-2">
+                          <p className="text-sm">• Click any overview card to edit budget, guest count, or location</p>
                           <p className="text-sm">• Click any category row to view and edit its details</p>
                           <p className="text-sm">• Use the ⋮ menu to quickly view details or remove a category</p>
                           <p className="text-sm">• Add new categories using the "Add Category" button</p>
@@ -854,121 +866,558 @@ export default function BudgetBreakdownPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm">
-                  <p className="text-sm text-sage-600 font-normal">Total Budget</p>
-                  <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">{formatCurrency(budgetData.budget)}</p>
+                {/* Total Budget Card */}
+                <div 
+                  className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm cursor-pointer"
+                  onClick={() => !isEditingPreferences && setIsEditingPreferences(true)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-sage-600 font-normal">Total Budget</p>
+                  </div>
+                  {isEditingPreferences ? (
+                    <div>
+                      <Input
+                        type="number"
+                        value={editedPreferences.budget || budgetData.budget}
+                        onChange={(e) => setEditedPreferences(prev => ({
+                          ...prev,
+                          budget: Number(e.target.value)
+                        }))}
+                        className="w-full"
+                        placeholder="Enter budget amount"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">
+                      {formatCurrency(budgetData.budget)}
+                    </p>
+                  )}
                 </div>
-                <div className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm">
-                  <p className="text-sm text-sage-600 font-normal">Guest Count</p>
-                  <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">{budgetData.guestCount} guests</p>
+
+                {/* Guest Count Card */}
+                <div 
+                  className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm cursor-pointer"
+                  onClick={() => !isEditingPreferences && setIsEditingPreferences(true)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-sage-600" />
+                      <p className="text-sm text-sage-600 font-normal">Guest Count & Date</p>
+                    </div>
+                  </div>
+                  {isEditingPreferences ? (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex items-center">
+                          <span className="text-sm text-sage-600">Guests: {editedPreferences.guestCount}</span>
+                        </div>
+                        <Slider
+                          value={[editedPreferences.guestCount]}
+                          min={10}
+                          max={500}
+                          step={5}
+                          onValueChange={(value) => setEditedPreferences(prev => ({
+                            ...prev,
+                            guestCount: value[0]
+                          }))}
+                          className="w-full"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm text-sage-600">Wedding Date</Label>
+                        <Input
+                          type="date"
+                          value={editedPreferences.weddingDate}
+                          onChange={(e) => setEditedPreferences(prev => ({
+                            ...prev,
+                            weddingDate: e.target.value
+                          }))}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">
+                        {budgetData.guestCount} guests
+                      </p>
+                      <p className="text-sm text-sage-600 mt-1">
+                        {budgetData.location.weddingDate ? 
+                          new Date(budgetData.location.weddingDate).toLocaleDateString('en-US', {
+                            month: 'long',
+                            year: 'numeric'
+                          })
+                          : 'Date not set'
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm">
-                  <p className="text-sm text-sage-600 font-normal">Location</p>
-                  <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">
-                    {locationDisplay} ({budgetData.calculatedBudget.rationale.locationFactor}x)
-                  </p>
+
+                {/* Location Card */}
+                <div 
+                  className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm cursor-pointer"
+                  onClick={() => !isEditingPreferences && setIsEditingPreferences(true)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-sage-600" />
+                      <p className="text-sm text-sage-600 font-normal">Location</p>
+                    </div>
+                  </div>
+                  {isEditingPreferences ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Input
+                            placeholder="City"
+                            value={editedPreferences.city}
+                            onChange={(e) => {
+                              setEditedPreferences(prev => ({
+                                ...prev,
+                                city: e.target.value
+                              }));
+                              // Clear error when user starts typing
+                              if (validationErrors.city) {
+                                setValidationErrors(prev => ({
+                                  ...prev,
+                                  city: ''
+                                }));
+                              }
+                            }}
+                            className={cn(
+                              "h-8",
+                              validationErrors.city && "border-red-500 focus-visible:ring-red-500"
+                            )}
+                          />
+                          {validationErrors.city && (
+                            <p className="text-xs text-red-500">{validationErrors.city}</p>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <Select
+                            value={editedPreferences.state}
+                            onValueChange={(value) => {
+                              setEditedPreferences(prev => ({
+                                ...prev,
+                                state: value
+                              }));
+                              // Clear error when user selects a state
+                              if (validationErrors.state) {
+                                setValidationErrors(prev => ({
+                                  ...prev,
+                                  state: ''
+                                }));
+                              }
+                            }}
+                          >
+                            <SelectTrigger className={cn(
+                              "h-8",
+                              validationErrors.state && "border-red-500 focus-visible:ring-red-500"
+                            )}>
+                              <SelectValue placeholder="State" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="AL">Alabama</SelectItem>
+                              <SelectItem value="AK">Alaska</SelectItem>
+                              <SelectItem value="AZ">Arizona</SelectItem>
+                              <SelectItem value="AR">Arkansas</SelectItem>
+                              <SelectItem value="CA">California</SelectItem>
+                              <SelectItem value="CO">Colorado</SelectItem>
+                              <SelectItem value="CT">Connecticut</SelectItem>
+                              <SelectItem value="DE">Delaware</SelectItem>
+                              <SelectItem value="FL">Florida</SelectItem>
+                              <SelectItem value="GA">Georgia</SelectItem>
+                              <SelectItem value="HI">Hawaii</SelectItem>
+                              <SelectItem value="ID">Idaho</SelectItem>
+                              <SelectItem value="IL">Illinois</SelectItem>
+                              <SelectItem value="IN">Indiana</SelectItem>
+                              <SelectItem value="IA">Iowa</SelectItem>
+                              <SelectItem value="KS">Kansas</SelectItem>
+                              <SelectItem value="KY">Kentucky</SelectItem>
+                              <SelectItem value="LA">Louisiana</SelectItem>
+                              <SelectItem value="ME">Maine</SelectItem>
+                              <SelectItem value="MD">Maryland</SelectItem>
+                              <SelectItem value="MA">Massachusetts</SelectItem>
+                              <SelectItem value="MI">Michigan</SelectItem>
+                              <SelectItem value="MN">Minnesota</SelectItem>
+                              <SelectItem value="MS">Mississippi</SelectItem>
+                              <SelectItem value="MO">Missouri</SelectItem>
+                              <SelectItem value="MT">Montana</SelectItem>
+                              <SelectItem value="NE">Nebraska</SelectItem>
+                              <SelectItem value="NV">Nevada</SelectItem>
+                              <SelectItem value="NH">New Hampshire</SelectItem>
+                              <SelectItem value="NJ">New Jersey</SelectItem>
+                              <SelectItem value="NM">New Mexico</SelectItem>
+                              <SelectItem value="NY">New York</SelectItem>
+                              <SelectItem value="NC">North Carolina</SelectItem>
+                              <SelectItem value="ND">North Dakota</SelectItem>
+                              <SelectItem value="OH">Ohio</SelectItem>
+                              <SelectItem value="OK">Oklahoma</SelectItem>
+                              <SelectItem value="OR">Oregon</SelectItem>
+                              <SelectItem value="PA">Pennsylvania</SelectItem>
+                              <SelectItem value="RI">Rhode Island</SelectItem>
+                              <SelectItem value="SC">South Carolina</SelectItem>
+                              <SelectItem value="SD">South Dakota</SelectItem>
+                              <SelectItem value="TN">Tennessee</SelectItem>
+                              <SelectItem value="TX">Texas</SelectItem>
+                              <SelectItem value="UT">Utah</SelectItem>
+                              <SelectItem value="VT">Vermont</SelectItem>
+                              <SelectItem value="VA">Virginia</SelectItem>
+                              <SelectItem value="WA">Washington</SelectItem>
+                              <SelectItem value="WV">West Virginia</SelectItem>
+                              <SelectItem value="WI">Wisconsin</SelectItem>
+                              <SelectItem value="WY">Wyoming</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {validationErrors.state && (
+                            <p className="text-xs text-red-500">{validationErrors.state}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Checkbox
+                          id="destination"
+                          checked={editedPreferences.isDestination}
+                          onCheckedChange={(checked) => {
+                            setEditedPreferences(prev => ({
+                              ...prev,
+                              isDestination: checked as boolean
+                            }));
+                            // Clear state error if it's a destination wedding
+                            if (checked && validationErrors.state) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                state: ''
+                              }));
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor="destination"
+                          className="text-xs text-sage-600 cursor-pointer"
+                        >
+                          This is a destination wedding
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">
+                        {budgetData.location.city}
+                        {budgetData.location.state && `, ${budgetData.location.state}`}
+                      </p>
+                      {budgetData.location.isDestination && (
+                        <p className="text-sm text-sage-600 mt-1">Destination Wedding</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <Table>
-                <TableHeader className="bg-sage-50/50">
-                  <TableRow>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Estimated Cost</TableHead>
-                    <TableHead>% of Budget</TableHead>
-                    <TableHead className="text-right">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <span className="text-sm text-sage-600">Actions</span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="text-xs">Click row to view details or use menu for quick actions</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {budgetData.calculatedBudget.categories?.map((category) => (
-                    <TableRow 
-                      key={category.id}
-                      className="cursor-pointer hover:bg-sage-50/30 transition-colors"
-                      onClick={() => {
-                        toggleCategory(category.id);
-                        setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
-                        const element = document.getElementById(`category-details-${category.id}`);
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                      }}
-                    >
-                      <TableCell>{category.name}</TableCell>
-                      <TableCell>{formatCurrency(category.estimatedCost)}</TableCell>
-                      <TableCell>{category.percentage}%</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              toggleCategory(category.id);
-                              setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
-                              const element = document.getElementById(`category-details-${category.id}`);
-                              if (element) {
-                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }
-                            }}>
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const updatedCategories = budgetData.calculatedBudget.categories.filter(
-                                  c => c.id !== category.id
-                                );
-                                const updatedBudgetData = {
-                                  ...budgetData,
-                                  calculatedBudget: {
-                                    ...budgetData.calculatedBudget,
-                                    categories: updatedCategories
-                                  },
-                                  lastUpdated: new Date().toISOString()
-                                };
-                                budgetStorage.setBudgetData(updatedBudgetData);
-                                setBudgetData(updatedBudgetData);
-                                toast({
-                                  title: "Category Removed",
-                                  description: `${category.name} has been removed from your budget.`
-                                });
-                              }}
-                            >
-                              Remove Category
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="font-medium">
-                    <TableCell>TOTAL</TableCell>
-                    <TableCell>{formatCurrency(budgetData.calculatedBudget.categories.reduce((sum, cat) => sum + cat.estimatedCost, 0))}</TableCell>
-                    <TableCell>100%</TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              {isEditingPreferences && (
+                <div className="flex justify-end gap-2 mb-6">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsEditingPreferences(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handlePreferenceUpdate}
+                    className="bg-gradient-to-r from-sage-600 to-sage-700 text-white hover:from-sage-700 hover:to-sage-800"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              )}
+
+              {viewMode === 'spreadsheet' ? (
+                <div className="overflow-x-auto -mx-6">
+                  <div className="inline-block min-w-full align-middle">
+                    <div className="overflow-hidden border border-sage-200 rounded-lg bg-white">
+                      <Table>
+                        <TableHeader className="bg-sage-50/50">
+                          <TableRow>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Estimated Cost</TableHead>
+                            <TableHead>Actual Cost</TableHead>
+                            <TableHead>Remaining</TableHead>
+                            <TableHead>% of Budget</TableHead>
+                            <TableHead>Priority</TableHead>
+                            <TableHead>Min Range</TableHead>
+                            <TableHead>Max Range</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {budgetData.calculatedBudget.categories?.map((category) => (
+                            <TableRow key={category.id}>
+                              <TableCell>{category.name}</TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={category.estimatedCost}
+                                  onChange={(e) => handleCategoryUpdate(category.id, parseInt(e.target.value) || 0)}
+                                  className="w-24 h-8"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={category.actualCost}
+                                  onChange={(e) => {
+                                    const newValue = parseInt(e.target.value) || 0;
+                                    const updatedCategory = {
+                                      ...category,
+                                      actualCost: newValue,
+                                      remaining: category.estimatedCost - newValue
+                                    };
+                                    setBudgetData({
+                                      ...budgetData,
+                                      calculatedBudget: {
+                                        ...budgetData.calculatedBudget,
+                                        categories: budgetData.calculatedBudget.categories.map(c =>
+                                          c.id === category.id ? updatedCategory : c
+                                        )
+                                      }
+                                    });
+                                  }}
+                                  className="w-24 h-8"
+                                />
+                              </TableCell>
+                              <TableCell>{formatCurrency(category.remaining)}</TableCell>
+                              <TableCell>{category.percentage}%</TableCell>
+                              <TableCell>
+                                <Select
+                                  value={category.priority}
+                                  onValueChange={(value: 'high' | 'medium' | 'low') => {
+                                    const updatedCategory = {
+                                      ...category,
+                                      priority: value
+                                    };
+                                    setBudgetData({
+                                      ...budgetData,
+                                      calculatedBudget: {
+                                        ...budgetData.calculatedBudget,
+                                        categories: budgetData.calculatedBudget.categories.map(c =>
+                                          c.id === category.id ? updatedCategory : c
+                                        )
+                                      }
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-24 h-8">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="low">Low</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>{formatCurrency(category.ranges?.min || category.estimatedCost * 0.9)}</TableCell>
+                              <TableCell>{formatCurrency(category.ranges?.max || category.estimatedCost * 1.1)}</TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => {
+                                      toggleCategory(category.id);
+                                      setViewMode('card');
+                                      setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
+                                      setTimeout(() => {
+                                        const element = document.getElementById(`category-details-${category.id}`);
+                                        if (element) {
+                                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                      }, 100);
+                                    }}>
+                                      View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      className="text-red-600"
+                                      onClick={() => {
+                                        const updatedCategories = budgetData.calculatedBudget.categories.filter(
+                                          c => c.id !== category.id
+                                        );
+                                        setBudgetData({
+                                          ...budgetData,
+                                          calculatedBudget: {
+                                            ...budgetData.calculatedBudget,
+                                            categories: updatedCategories
+                                          }
+                                        });
+                                        toast({
+                                          title: "Category Removed",
+                                          description: `${category.name} has been removed from your budget.`
+                                        });
+                                      }}
+                                    >
+                                      Remove Category
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          <TableRow className="font-medium">
+                            <TableCell>TOTAL</TableCell>
+                            <TableCell>{formatCurrency(budgetData.calculatedBudget.categories.reduce((sum, cat) => sum + cat.estimatedCost, 0))}</TableCell>
+                            <TableCell>{formatCurrency(budgetData.calculatedBudget.categories.reduce((sum, cat) => sum + cat.actualCost, 0))}</TableCell>
+                            <TableCell>{formatCurrency(budgetData.calculatedBudget.categories.reduce((sum, cat) => sum + cat.remaining, 0))}</TableCell>
+                            <TableCell>100%</TableCell>
+                            <TableCell></TableCell>
+                            <TableCell></TableCell>
+                            <TableCell></TableCell>
+                            <TableCell></TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader className="bg-sage-50/50">
+                      <TableRow>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Estimated Cost</TableHead>
+                        <TableHead>% of Budget</TableHead>
+                        <TableHead className="text-right">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <span className="text-sm text-sage-600">Actions</span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="text-xs">Click amount to edit or use menu for other actions</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {budgetData.calculatedBudget.categories?.map((category) => (
+                        <TableRow 
+                          key={category.id}
+                          className="hover:bg-sage-50/30 transition-colors"
+                        >
+                          <TableCell>{category.name}</TableCell>
+                          <TableCell 
+                            className="cursor-pointer"
+                            onClick={() => {
+                              setEditingCategoryId(category.id);
+                              setEditedAmount(category.estimatedCost);
+                            }}
+                          >
+                            {editingCategoryId === category.id ? (
+                              <form 
+                                onSubmit={(e) => {
+                                  e.preventDefault();
+                                  if (editedAmount !== null) {
+                                    handleCategoryUpdate(category.id, editedAmount);
+                                    setEditingCategoryId(null);
+                                    setEditedAmount(null);
+                                  }
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Input
+                                  type="number"
+                                  value={editedAmount || ''}
+                                  onChange={(e) => setEditedAmount(Number(e.target.value))}
+                                  className="w-24 h-8"
+                                  autoFocus
+                                  onBlur={() => {
+                                    if (editedAmount !== null) {
+                                      handleCategoryUpdate(category.id, editedAmount);
+                                      setEditingCategoryId(null);
+                                      setEditedAmount(null);
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                      setEditingCategoryId(null);
+                                      setEditedAmount(null);
+                                    }
+                                  }}
+                                />
+                              </form>
+                            ) : (
+                              formatCurrency(category.estimatedCost)
+                            )}
+                          </TableCell>
+                          <TableCell>{category.percentage}%</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => {
+                                  toggleCategory(category.id);
+                                  setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
+                                  const element = document.getElementById(`category-details-${category.id}`);
+                                  if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }}>
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-red-600"
+                                  onClick={() => {
+                                    const updatedCategories = budgetData.calculatedBudget.categories.filter(
+                                      c => c.id !== category.id
+                                    );
+                                    const updatedBudgetData = {
+                                      ...budgetData,
+                                      calculatedBudget: {
+                                        ...budgetData.calculatedBudget,
+                                        categories: updatedCategories
+                                      },
+                                      lastUpdated: new Date().toISOString()
+                                    };
+                                    budgetStorage.setBudgetData(updatedBudgetData);
+                                    setBudgetData(updatedBudgetData);
+                                    toast({
+                                      title: "Category Removed",
+                                      description: `${category.name} has been removed from your budget.`
+                                    });
+                                  }}
+                                >
+                                  Remove Category
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="font-medium">
+                        <TableCell>TOTAL</TableCell>
+                        <TableCell>{formatCurrency(budgetData.calculatedBudget.categories.reduce((sum, cat) => sum + cat.estimatedCost, 0))}</TableCell>
+                        <TableCell>100%</TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </>
+              )}
             </CardContent>
           </Card>
 
           {/* Category Details */}
-          {budgetData.calculatedBudget.categories?.map((category) => (
+          {viewMode === 'card' && budgetData.calculatedBudget.categories?.map((category) => (
             <Card key={category.id} id={`category-details-${category.id}`}>
               <CardHeader className="cursor-pointer" onClick={() => toggleCategory(category.id)}>
                 <div className="flex items-center justify-between">
@@ -1005,243 +1454,8 @@ export default function BudgetBreakdownPage() {
                               `${formatCurrency(category.estimatedCost * 0.9)} - ${formatCurrency(category.estimatedCost * 1.1)}`
                             )}
                           </p>
-                          <p className="text-sm text-sage-600 mt-1">
-                            Typically {Math.max(0, category.percentage - 5)}% - {Math.min(100, category.percentage + 5)}% of total budget
-                          </p>
-                          {category.actualCost > 0 && (
-                            <p className="text-sm text-sage-600 mt-1">Spent so far: {formatCurrency(category.actualCost)}</p>
-                          )}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Category Description */}
-                    {category.description && (
-                      <div className="bg-white rounded-lg p-4 border border-sage-200">
-                        <h4 className="text-sm font-medium mb-2">What's Included</h4>
-                        <p className="text-sm text-sage-900 font-normal leading-relaxed">
-                          {category.description}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Category Management */}
-                    <div className="bg-white rounded-lg p-4 border border-sage-200">
-                      <h4 className="text-sm font-medium mb-4">Category Management</h4>
-                      <div className="space-y-4">
-                        {/* Budget Allocation */}
-                        <div>
-                          <Label className="text-sm text-sage-700">Budget Allocation</Label>
-                          <div className="flex items-center gap-4 mt-2">
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                value={category.estimatedCost}
-                                onChange={(e) => {
-                                  const newValue = parseInt(e.target.value) || 0;
-                                  handleCategoryUpdate(category.id, newValue);
-                                }}
-                                className={cn(
-                                  "w-32",
-                                  validationErrors.amount && "border-red-500",
-                                  impactedCategories.length > 0 && "border-yellow-500"
-                                )}
-                              />
-                              {validationErrors.amount && (
-                                <p className="text-xs text-red-500 mt-1">{validationErrors.amount}</p>
-                              )}
-                            </div>
-                            <span className="text-sm text-sage-600">
-                              ({Math.round((category.estimatedCost / budgetData.budget) * 100)}% of total budget)
-                            </span>
-                          </div>
-                          {impactedCategories.includes(category.id) && (
-                            <p className="text-xs text-yellow-600 mt-1">
-                              This category will be significantly impacted by recent changes
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Priority Level */}
-                        <div>
-                          <Label className="text-sm text-sage-700">Priority Level</Label>
-                          <Select
-                            value={category.priority}
-                            onValueChange={(value: 'high' | 'medium' | 'low') => {
-                              const updatedCategory = {
-                                ...category,
-                                priority: value
-                              };
-                              setBudgetData({
-                                ...budgetData,
-                                calculatedBudget: {
-                                  ...budgetData.calculatedBudget,
-                                  categories: budgetData.calculatedBudget.categories.map(c =>
-                                    c.id === category.id ? updatedCategory : c
-                                  )
-                                }
-                              });
-                            }}
-                          >
-                            <SelectTrigger className="w-32 mt-2">
-                              <SelectValue placeholder="Select priority" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="high">High</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
-                              <SelectItem value="low">Low</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Actual Spent */}
-                        <div>
-                          <Label className="text-sm text-sage-700">Amount Spent So Far</Label>
-                          <div className="flex items-center gap-4 mt-2">
-                            <Input
-                              type="number"
-                              value={category.actualCost}
-                              onChange={(e) => {
-                                const newValue = parseInt(e.target.value) || 0;
-                                const updatedCategory = {
-                                  ...category,
-                                  actualCost: newValue,
-                                  remaining: category.estimatedCost - newValue
-                                };
-                                setBudgetData({
-                                  ...budgetData,
-                                  calculatedBudget: {
-                                    ...budgetData.calculatedBudget,
-                                    categories: budgetData.calculatedBudget.categories.map(c =>
-                                      c.id === category.id ? updatedCategory : c
-                                    )
-                                  }
-                                });
-                              }}
-                              className="w-32"
-                            />
-                            <span className="text-sm text-sage-600">
-                              (Remaining: {formatCurrency(category.remaining)})
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Notes */}
-                        <div>
-                          <Label className="text-sm text-sage-700">Notes</Label>
-                          <Input
-                            value={category.notes || ''}
-                            onChange={(e) => {
-                              const updatedCategory = {
-                                ...category,
-                                notes: e.target.value
-                              };
-                              setBudgetData({
-                                ...budgetData,
-                                calculatedBudget: {
-                                  ...budgetData.calculatedBudget,
-                                  categories: budgetData.calculatedBudget.categories.map(c =>
-                                    c.id === category.id ? updatedCategory : c
-                                  )
-                                }
-                              });
-                            }}
-                            className="mt-2"
-                            placeholder="Add notes about this category..."
-                          />
-                        </div>
-
-                        {/* Save Changes Button */}
-                        <Button
-                          onClick={() => {
-                            const updatedBudgetData = {
-                              ...budgetData,
-                              lastUpdated: new Date().toISOString()
-                            };
-                            budgetStorage.setBudgetData(updatedBudgetData);
-                            toast({
-                              title: "Changes Saved",
-                              description: `Updates to ${category.name} have been saved.`
-                            });
-                          }}
-                          className="w-full bg-gradient-to-r from-sage-600 to-sage-700 text-white hover:from-sage-700 hover:to-sage-800"
-                        >
-                          Save Changes
-                        </Button>
-
-                        {/* Remove Category */}
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            const updatedCategories = budgetData.calculatedBudget.categories.filter(
-                              c => c.id !== category.id
-                            );
-                            const updatedBudgetData = {
-                              ...budgetData,
-                              calculatedBudget: {
-                                ...budgetData.calculatedBudget,
-                                categories: updatedCategories
-                              },
-                              lastUpdated: new Date().toISOString()
-                            };
-                            budgetStorage.setBudgetData(updatedBudgetData);
-                            setBudgetData(updatedBudgetData);
-                            toast({
-                              title: "Category Removed",
-                              description: `${category.name} has been removed from your budget.`
-                            });
-                          }}
-                          className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          Remove Category
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Money Saving Tips */}
-                    {category.budgetingTips && category.budgetingTips.length > 0 && (
-                      <div className="bg-white rounded-lg p-4 border border-sage-200">
-                        <h4 className="text-sm font-medium mb-2">Money Saving Tips</h4>
-                        <ul className="space-y-2">
-                          {category.budgetingTips.map((tip, index) => (
-                            <li key={index} className="flex items-start gap-2 text-sm text-sage-900">
-                              <span className="text-sage-500 mt-1">•</span>
-                              {tip}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Unified Explanation */}
-                    <div className="bg-white rounded-lg p-4 border border-sage-200">
-                      <p className="text-sm text-sage-900 font-normal leading-relaxed">
-                        {budgetData.calculatedBudget.rationale?.notes?.filter(note => 
-                          note.toLowerCase().includes(category.name.toLowerCase())
-                        ).map((note, index) => (
-                          <span key={index}>
-                            {note}
-                            <br />
-                          </span>
-                        ))}
-                        {budgetData.calculatedBudget.rationale?.locationFactor !== 1 && budgetData.calculatedBudget.location?.city && (
-                          <span className="text-sage-700">
-                            {" "}Due to your location in {budgetData.calculatedBudget.location.city}, expect costs to be 
-                            {budgetData.calculatedBudget.rationale.locationFactor > 1 ? " higher" : " lower"} 
-                            ({Math.abs((budgetData.calculatedBudget.rationale.locationFactor * 100 - 100)).toFixed(0)}% {budgetData.calculatedBudget.rationale.locationFactor > 1 ? "above" : "below"} average).
-                          </span>
-                        )}
-                        {budgetData.calculatedBudget.rationale?.seasonalFactor !== 1 && (
-                          <span className="text-sage-700">
-                            {" "}Your {budgetData.calculatedBudget.rationale.seasonalFactor > 1 ? "peak" : "off-peak"} season date adds a 
-                            {budgetData.calculatedBudget.rationale.seasonalFactor > 1 ? " premium" : " discount"} of 
-                            {Math.abs((budgetData.calculatedBudget.rationale.seasonalFactor * 100 - 100)).toFixed(0)}%.
-                          </span>
-                        )}
-                        {category.priority === 'high' && (
-                          <span className="text-sage-700"> We've prioritized this category based on your preferences.</span>
-                        )}
-                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -1250,14 +1464,6 @@ export default function BudgetBreakdownPage() {
           ))}
         </div>
       </div>
-
-      {message && (
-        <div className="mb-4">
-          <Alert>
-            <AlertDescription>{message}</AlertDescription>
-          </Alert>
-        </div>
-      )}
     </div>
   );
-} 
+}

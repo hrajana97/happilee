@@ -14,6 +14,7 @@ import budgetStorage from "@/lib/budget-storage"
 import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { useSearchParams } from 'next/navigation';
 
 interface BudgetFormData {
   totalBudget: string;
@@ -35,6 +36,7 @@ interface BudgetFormData {
 }
 
 const BudgetSurvey = () => {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [budgetData, setBudgetData] = useState<BudgetFormData>({
     totalBudget: '',
@@ -55,10 +57,28 @@ const BudgetSurvey = () => {
     planningAssistance: '',
   });
 
-  // Load initial user data
+  // Load initial user data and handle prefill
   useEffect(() => {
     const userData = storage.getUserData();
-    if (userData) {
+    const prefill = searchParams.get('prefill') === 'true';
+    const finalStep = searchParams.get('step') === 'final';
+
+    if (prefill) {
+      setBudgetData(prevData => ({
+        ...prevData,
+        totalBudget: searchParams.get('budget') || '',
+        guestCount: searchParams.get('guestCount') || '',
+        weddingDate: searchParams.get('weddingDate') || '',
+        isDestination: searchParams.get('isDestination') === 'true',
+        city: searchParams.get('city') || '',
+        state: searchParams.get('state') || '',
+        country: searchParams.get('isDestination') === 'true' ? '' : 'United States',
+      }));
+
+      if (finalStep) {
+        setStep(7); // Set to last step
+      }
+    } else if (userData) {
       setBudgetData(prevData => ({
         ...prevData,
         totalBudget: userData.budget ? userData.budget.toString() : '',
@@ -66,7 +86,7 @@ const BudgetSurvey = () => {
         weddingDate: userData.weddingDate ? userData.weddingDate.split('T')[0] : '',
       }));
     }
-  }, []);
+  }, [searchParams]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
