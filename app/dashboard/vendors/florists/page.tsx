@@ -22,7 +22,6 @@ import { AICommunicationSummary } from "@/components/vendors/ai-communication-su
 import { AIContactDialog } from "@/components/vendors/ai-contact-dialog"
 import { storage } from "@/lib/storage"
 import { useRouter } from "next/navigation"
-import { AssistantTooltip } from "@/components/assistant/assistant-tooltip"
 
 interface Florist {
   id: string
@@ -209,14 +208,9 @@ export default function FloristsPage() {
                 Back to Categories
               </Link>
             </Button>
-            <AssistantTooltip
-              tip="Compare different florists side by side! Upload pricing sheets or manually enter package details to make informed decisions. Perfect for analyzing costs, flower selections, and making your final choice."
-              initialShow={true}
-            >
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/vendors/compare?category=florists">Compare Florists</Link>
-              </Button>
-            </AssistantTooltip>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/vendors/compare?category=florists">Compare Florists</Link>
+            </Button>
             <Dialog open={showFilters} onOpenChange={setShowFilters}>
               <DialogTrigger asChild>
                 <Button variant="outline">

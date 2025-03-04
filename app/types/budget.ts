@@ -29,7 +29,7 @@ export interface BudgetPreferences {
   photoVideo?: string;
   coverage?: string;
   floralStyle?: string;
-  diyElements?: string[];
+  diyElements?: string;
   beautyCoverage?: string;
   planningAssistance?: string;
 }
@@ -48,12 +48,12 @@ export interface UserData {
   partnerName?: string;
   weddingDate: string;
   budget: number;
-  totalBudget: number;
+  totalBudget?: number;
   guestCount: number;
-  location: BudgetLocation;
+  location?: BudgetLocation;
   preferences?: BudgetPreferences;
   isDemo?: boolean;
-  lastUpdated: string;
+  lastUpdated?: string;
   calculatedBudget?: CalculatedBudget;
 }
 
@@ -66,10 +66,11 @@ export interface CalculatedBudget {
     seasonalFactor: number;
     notes: string[];
   };
+  location?: BudgetLocation;
   dayOfWeek: 'saturday' | 'friday' | 'sunday' | 'weekday';
-  adjustedFactors?: {
-    seasonal?: number;
-    location?: number;
+  adjustedFactors: {
+    seasonal: number;
+    location: number;
     service?: number;
   };
 }
@@ -80,23 +81,7 @@ export interface BudgetData {
   totalBudget: number;
   guestCount: number;
   location: BudgetLocation;
-  preferences?: {
-    musicChoice?: string;
-    musicHours?: number;
-    coverageHours?: number;
-    makeupFor?: string[];
-    makeupServices?: string[];
-    transportationType?: 'Standard sedan' | 'Luxury Sedan' | 'SUV' | 'Limo' | 'Party Bus';
-    transportationHours?: number;
-    cateringStyle?: string;
-    barService?: string;
-    photoVideo?: string;
-    coverage?: string;
-    floralStyle?: string;
-    diyElements?: string[];
-    beautyCoverage?: string;
-    planningAssistance?: string;
-  };
+  preferences?: BudgetPreferences;
   calculatedBudget: CalculatedBudget;
   lastUpdated: string;
 } 

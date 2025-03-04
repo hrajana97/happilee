@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileUpload } from "@/components/vendors/file-upload"
 import { ComparisonTable } from "@/components/vendors/comparison-table"
 import { ComparisonSummary } from "@/components/vendors/comparison-summary"
-import { AssistantTooltip } from '@/components/assistant/assistant-tooltip'
 import { Download, Upload, Table, Plus, ArrowLeft } from 'lucide-react'
 import {
   Dialog,
@@ -70,15 +69,10 @@ export default function ComparePage() {
             <Button variant="outline" onClick={handleLogout} className="mr-2">
               Sign Out
             </Button>
-            <AssistantTooltip
-              tip="Export your comparison as a PDF or spreadsheet to share with others"
-              side="bottom"
-            >
-              <Button variant="outline" onClick={handleExportComparison}>
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </AssistantTooltip>
+            <Button variant="outline" onClick={handleExportComparison}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
             <Dialog open={showAddManual} onOpenChange={setShowAddManual}>
               <DialogTrigger asChild>
                 <Button>
@@ -132,14 +126,9 @@ export default function ComparePage() {
                         Compare vendor packages side by side
                       </CardDescription>
                     </div>
-                    <AssistantTooltip
-                      tip="Click on any row to see more details about that feature"
-                      side="left"
-                    >
-                      <Button variant="ghost" size="icon">
-                        <Table className="h-4 w-4" />
-                      </Button>
-                    </AssistantTooltip>
+                    <Button variant="ghost" size="icon">
+                      <Table className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>

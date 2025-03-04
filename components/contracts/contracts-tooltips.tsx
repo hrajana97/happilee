@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { AssistantTooltip } from "@/components/assistant/assistant-tooltip"
 import { Button } from "@/components/ui/button"
 import { X, ArrowRight, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -81,36 +80,9 @@ export function ContractsTooltips() {
   const currentTooltip = tooltipSteps[currentStep]
 
   return (
-    <AssistantTooltip
-      key={currentTooltip.id}
-      tip={currentTooltip.content}
-      targetId={currentTooltip.elementId}
-      side="right"
-      className="absolute z-50"
-      onNext={handleNext}
-      onPrevious={handlePrevious}
-    >
-      <div className="flex items-center justify-between mt-4 gap-4">
-        <div className="flex items-center gap-2">{/* Removed step counter div */}</div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handlePrevious}
-            disabled={currentStep === 0}
-            className={cn(
-              "text-[#738678] hover:text-[#738678]/90",
-              currentStep === 0 && "opacity-50 cursor-not-allowed",
-            )}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={handleNext} className="text-[#738678] hover:text-[#738678]/90">
-            {currentStep === tooltipSteps.length - 1 ? <X className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
-          </Button>
-        </div>
-      </div>
-    </AssistantTooltip>
+    <div>
+      {/* Component content without AssistantTooltip */}
+    </div>
   )
 }
 

@@ -33,7 +33,6 @@ import { AIContactDialog } from "@/components/vendors/ai-contact-dialog"
 import { QuoteTemplateDialog } from "@/components/vendors/quote-template-dialog"
 import { storage } from "@/lib/storage"
 import Link from "next/link"
-import { AssistantTooltip } from "@/components/assistant/assistant-tooltip"
 
 interface CustomVendor {
   id: string
@@ -421,33 +420,17 @@ export default function CustomVendorPage() {
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <AssistantTooltip
-              tip="Use our AI-powered template to craft the perfect inquiry email. The template automatically includes key details like your wedding date and helps you ask the right questions about pricing, capacity, and included services."
-              side="bottom"
-              className="hidden transition-opacity duration-300 opacity-0"
-              data-tooltip="quote-template"
-              onClose={() => {
-                const tooltip = document.querySelector('[data-tooltip="quote-template"]')
-                if (tooltip) {
-                  tooltip.classList.add("opacity-0")
-                  setTimeout(() => {
-                    tooltip.classList.add("hidden")
-                  }, 300)
-                }
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedVendor(null)
+                setShowQuoteDialog(true)
               }}
+              className="bg-[#738678] hover:bg-[#738678]/90 text-white border-0"
             >
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelectedVendor(null)
-                  setShowQuoteDialog(true)
-                }}
-                className="bg-[#738678] hover:bg-[#738678]/90 text-white border-0"
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                Quote Request Template
-              </Button>
-            </AssistantTooltip>
+              <Mail className="mr-2 h-4 w-4" />
+              Quote Request Template
+            </Button>
             <Dialog open={showFilters} onOpenChange={setShowFilters}>
               <DialogTrigger asChild>
                 <Button variant="outline">

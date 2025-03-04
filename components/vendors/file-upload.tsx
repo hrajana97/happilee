@@ -5,7 +5,6 @@ import { useDropzone } from 'react-dropzone'
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Upload, X, FileText, ImageIcon } from 'lucide-react'
-import { AssistantTooltip } from '@/components/assistant/assistant-tooltip'
 
 interface FileUploadProps {
   onUpload: (files: File[]) => void
@@ -63,35 +62,30 @@ export function FileUpload({ onUpload }: FileUploadProps) {
 
   return (
     <div className="space-y-4">
-      <AssistantTooltip
-        tip="Drag and drop vendor documents here, or click to browse. We'll help extract and organize the information."
-        side="right"
+      <div
+        {...getRootProps()}
+        className={`
+          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+          transition-colors duration-200
+          ${isDragActive
+            ? 'border-sage-400 bg-sage-50'
+            : 'border-sage-200 hover:border-sage-300'
+          }
+        `}
       >
-        <div
-          {...getRootProps()}
-          className={`
-            border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-            transition-colors duration-200
-            ${isDragActive
-              ? 'border-sage-400 bg-sage-50'
-              : 'border-sage-200 hover:border-sage-300'
-            }
-          `}
+        <input {...getInputProps()} />
+        <Upload className="mx-auto h-12 w-12 text-sage-400" />
+        <p className="mt-2 text-sm text-sage-600">
+          Drag and drop files here, or click to select files
+        </p>
+        <Button
+          variant="link"
+          className="mt-2 text-sage-600"
+          onClick={e => e.stopPropagation()}
         >
-          <input {...getInputProps()} />
-          <Upload className="mx-auto h-12 w-12 text-sage-400" />
-          <p className="mt-2 text-sm text-sage-600">
-            Drag and drop files here, or click to select files
-          </p>
-          <Button
-            variant="link"
-            className="mt-2 text-sage-600"
-            onClick={e => e.stopPropagation()}
-          >
-            Learn more about supported file types
-          </Button>
-        </div>
-      </AssistantTooltip>
+          Learn more about supported file types
+        </Button>
+      </div>
 
       {uploadingFiles.length > 0 && (
         <div className="space-y-2">

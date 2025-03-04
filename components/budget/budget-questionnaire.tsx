@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { BudgetData } from "@/types/budget"
+import type { BudgetData, UserData } from "@/types/budget"
 import { storage } from "@/lib/storage"
 import budgetStorage from "@/lib/budget-storage"
 import { ArrowLeft, Pencil } from "lucide-react"
@@ -115,15 +115,6 @@ const BudgetSurvey = () => {
         return;
       }
 
-      // Create location data
-      const locationData = {
-        city: budgetData.city,
-        state: budgetData.state,
-        country: budgetData.isDestination ? budgetData.country : "United States",
-        weddingDate: budgetData.weddingDate,
-        isDestination: budgetData.isDestination
-      };
-
       // Create priorities array based on user selections
       const priorities = [];
       
@@ -156,19 +147,52 @@ const BudgetSurvey = () => {
       // Calculate the budget with preferences
       const result = budgetStorage.calculateBudget(
         parseInt(budgetData.guestCount) || 0,
-        locationData,
+        {
+          city: budgetData.city,
+          state: budgetData.state,
+          country: budgetData.isDestination ? budgetData.country : "United States",
+          isDestination: budgetData.isDestination,
+          weddingDate: budgetData.weddingDate
+        },
         priorities,
         preferences
       );
 
       // Store the result in localStorage for the breakdown page
-      storage.setUserData({
+      const userData = {
         budget: totalBudget,
         weddingDate: budgetData.weddingDate,
         guestCount: parseInt(budgetData.guestCount) || 0,
-        calculatedBudget: result,
-        preferences: preferences
-      });
+        calculatedBudget: {
+          categories: result.categories,
+          rationale: result.rationale,
+          dayOfWeek: 'saturday',
+          adjustedFactors: {
+            seasonal: 1,
+            location: 1
+          }
+        },
+        preferences: {
+          cateringStyle: budgetData.cateringType,
+          barService: budgetData.barType,
+          photoVideo: budgetData.photoVideo,
+          coverage: budgetData.coverage,
+          floralStyle: budgetData.floralStyle,
+          diyElements: budgetData.diyElements,
+          musicChoice: budgetData.musicChoice,
+          beautyCoverage: budgetData.beautyCoverage,
+          planningAssistance: budgetData.planningAssistance
+        },
+        location: {
+          city: budgetData.city,
+          state: budgetData.state,
+          country: budgetData.isDestination ? budgetData.country : "United States",
+          isDestination: budgetData.isDestination,
+          weddingDate: budgetData.weddingDate
+        },
+        lastUpdated: new Date().toISOString()
+      } as Partial<UserData>;
+      storage.setUserData(userData);
 
       // Navigate to the budget breakdown page
       window.location.href = '/budget-breakdown';

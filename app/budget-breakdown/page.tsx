@@ -151,27 +151,27 @@ export default function BudgetBreakdownPage() {
           budget: userData.budget || 0,
           totalBudget: userData.totalBudget || userData.budget || 0,
           guestCount: userData.guestCount || 0,
-          location: userData.location || {
-            city: "",
-            state: "",
-            country: "United States",
-            isDestination: false,
-            weddingDate: userData.weddingDate
+          location: {
+            city: userData.location?.city || "",
+            state: userData.location?.state || "",
+            country: userData.location?.country || "United States",
+            isDestination: userData.location?.isDestination || false,
+            weddingDate: userData.location?.weddingDate || userData.weddingDate
           },
           preferences: userData.preferences || {},
-          calculatedBudget: userData.calculatedBudget || {
-            categories: [],
+          calculatedBudget: {
+            categories: userData.calculatedBudget?.categories || [],
             rationale: {
               totalBudget: userData.budget?.toString() || "0",
-              locationFactor: 1,
-              seasonalFactor: 1,
-              notes: []
+              locationFactor: userData.calculatedBudget?.rationale?.locationFactor || 1,
+              seasonalFactor: userData.calculatedBudget?.rationale?.seasonalFactor || 1,
+              notes: userData.calculatedBudget?.rationale?.notes || []
             },
-            dayOfWeek: "saturday",
+            dayOfWeek: userData.calculatedBudget?.dayOfWeek || "saturday",
             adjustedFactors: {
-              seasonal: 1,
-              location: 1,
-              service: 1
+              seasonal: userData.calculatedBudget?.adjustedFactors?.seasonal || 1,
+              location: userData.calculatedBudget?.adjustedFactors?.location || 1,
+              service: userData.calculatedBudget?.adjustedFactors?.service || 1
             }
           },
           lastUpdated: userData.lastUpdated || new Date().toISOString()
@@ -208,7 +208,17 @@ export default function BudgetBreakdownPage() {
 
   // Function to format currency without the Intl object for Excel
   const formatCurrencyRaw = (amount: number) => {
-    return (Math.round(amount * 100) / 100).toFixed(2);
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `$${amount.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    })}`;
   };
 
   // Function to prepare data for export
@@ -319,18 +329,41 @@ export default function BudgetBreakdownPage() {
 
   const handlePreferenceUpdate = async () => {
     const currentData: Partial<UserData> = {
-      budget: budgetData.budget,
-      guestCount: budgetData.guestCount,
-      location: budgetData.location,
-      preferences: {
-        ...budgetData.preferences,
-        diyElements: Array.isArray(budgetData.preferences?.diyElements) ? budgetData.preferences.diyElements : [],
-        makeupFor: Array.isArray(budgetData.preferences?.makeupFor) ? budgetData.preferences.makeupFor : [],
-        makeupServices: Array.isArray(budgetData.preferences?.makeupServices) ? budgetData.preferences.makeupServices : []
+      budget: editedPreferences.budget,
+      guestCount: editedPreferences.guestCount,
+      location: {
+        city: editedPreferences.city,
+        state: editedPreferences.state,
+        country: editedPreferences.country,
+        isDestination: editedPreferences.isDestination,
+        weddingDate: editedPreferences.weddingDate
       },
+      preferences: budgetData.preferences,
       lastUpdated: new Date().toISOString()
     };
     storage.setUserData(currentData);
+    
+    // Update local state
+    setBudgetData(prev => ({
+      ...prev,
+      budget: editedPreferences.budget,
+      guestCount: editedPreferences.guestCount,
+      location: {
+        city: editedPreferences.city,
+        state: editedPreferences.state,
+        country: editedPreferences.country,
+        isDestination: editedPreferences.isDestination,
+        weddingDate: editedPreferences.weddingDate
+      },
+      lastUpdated: new Date().toISOString()
+    }));
+    
+    setIsEditingPreferences(false);
+    
+    toast({
+      title: "Preferences Updated",
+      description: "Your preferences have been saved successfully."
+    });
   };
 
   const validateBudgetChange = (categoryId: string, newAmount: number): ValidationResult => {
@@ -454,13 +487,6 @@ export default function BudgetBreakdownPage() {
         }
       };
     });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
   };
 
   const handleAddCategory = () => {
@@ -995,42 +1021,33 @@ export default function BudgetBreakdownPage() {
                           value={[editedPreferences.guestCount]}
                           min={10}
                           max={500}
-                          step={5}
-                          onValueChange={(value) => setEditedPreferences(prev => ({
+                          step={1}
+                          onValueChange={([value]) => setEditedPreferences(prev => ({
                             ...prev,
-                            guestCount: value[0]
+                            guestCount: value
                           }))}
-                          className="w-full"
+                          className="mt-2"
                         />
                       </div>
-                      <div>
-                        <Label className="text-sm text-sage-600">Wedding Date</Label>
-                        <Input
-                          type="date"
-                          value={editedPreferences.weddingDate}
-                          onChange={(e) => setEditedPreferences(prev => ({
-                            ...prev,
-                            weddingDate: e.target.value
-                          }))}
-                          className="mt-1"
-                        />
-                      </div>
+                      <Input
+                        type="date"
+                        value={editedPreferences.weddingDate}
+                        onChange={(e) => setEditedPreferences(prev => ({
+                          ...prev,
+                          weddingDate: e.target.value
+                        }))}
+                        className="w-full"
+                      />
                     </div>
                   ) : (
-                    <div>
+                    <>
                       <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">
                         {budgetData.guestCount} guests
                       </p>
-                      <p className="text-sm text-sage-600 mt-1">
-                        {budgetData.location.weddingDate ? 
-                          new Date(budgetData.location.weddingDate).toLocaleDateString('en-US', {
-                            month: 'long',
-                            year: 'numeric'
-                          })
-                          : 'Date not set'
-                        }
+                      <p className="text-sm text-sage-600">
+                        {budgetData.location?.weddingDate ? new Date(budgetData.location.weddingDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Date not set'}
                       </p>
-                    </div>
+                    </>
                   )}
                 </div>
 
@@ -1047,147 +1064,97 @@ export default function BudgetBreakdownPage() {
                   </div>
                   {isEditingPreferences ? (
                     <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Input
-                            placeholder="City"
-                            value={editedPreferences.city}
-                            onChange={(e) => {
-                              setEditedPreferences(prev => ({
-                                ...prev,
-                                city: e.target.value
-                              }));
-                              // Clear error when user starts typing
-                              if (validationErrors.city) {
-                                setValidationErrors(prev => ({
-                                  ...prev,
-                                  city: ''
-                                }));
-                              }
-                            }}
-                            className={cn(
-                              "h-8",
-                              validationErrors.city && "border-red-500 focus-visible:ring-red-500"
-                            )}
-                          />
-                          {validationErrors.city && (
-                            <p className="text-xs text-red-500">{validationErrors.city}</p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <Select
-                            value={editedPreferences.state}
-                            onValueChange={(value) => {
-                              setEditedPreferences(prev => ({
-                                ...prev,
-                                state: value
-                              }));
-                              // Clear error when user selects a state
-                              if (validationErrors.state) {
-                                setValidationErrors(prev => ({
-                                  ...prev,
-                                  state: ''
-                                }));
-                              }
-                            }}
-                          >
-                            <SelectTrigger className={cn(
-                              "h-8",
-                              validationErrors.state && "border-red-500 focus-visible:ring-red-500"
-                            )}>
-                              <SelectValue placeholder="State" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="AL">Alabama</SelectItem>
-                              <SelectItem value="AK">Alaska</SelectItem>
-                              <SelectItem value="AZ">Arizona</SelectItem>
-                              <SelectItem value="AR">Arkansas</SelectItem>
-                              <SelectItem value="CA">California</SelectItem>
-                              <SelectItem value="CO">Colorado</SelectItem>
-                              <SelectItem value="CT">Connecticut</SelectItem>
-                              <SelectItem value="DE">Delaware</SelectItem>
-                              <SelectItem value="FL">Florida</SelectItem>
-                              <SelectItem value="GA">Georgia</SelectItem>
-                              <SelectItem value="HI">Hawaii</SelectItem>
-                              <SelectItem value="ID">Idaho</SelectItem>
-                              <SelectItem value="IL">Illinois</SelectItem>
-                              <SelectItem value="IN">Indiana</SelectItem>
-                              <SelectItem value="IA">Iowa</SelectItem>
-                              <SelectItem value="KS">Kansas</SelectItem>
-                              <SelectItem value="KY">Kentucky</SelectItem>
-                              <SelectItem value="LA">Louisiana</SelectItem>
-                              <SelectItem value="ME">Maine</SelectItem>
-                              <SelectItem value="MD">Maryland</SelectItem>
-                              <SelectItem value="MA">Massachusetts</SelectItem>
-                              <SelectItem value="MI">Michigan</SelectItem>
-                              <SelectItem value="MN">Minnesota</SelectItem>
-                              <SelectItem value="MS">Mississippi</SelectItem>
-                              <SelectItem value="MO">Missouri</SelectItem>
-                              <SelectItem value="MT">Montana</SelectItem>
-                              <SelectItem value="NE">Nebraska</SelectItem>
-                              <SelectItem value="NV">Nevada</SelectItem>
-                              <SelectItem value="NH">New Hampshire</SelectItem>
-                              <SelectItem value="NJ">New Jersey</SelectItem>
-                              <SelectItem value="NM">New Mexico</SelectItem>
-                              <SelectItem value="NY">New York</SelectItem>
-                              <SelectItem value="NC">North Carolina</SelectItem>
-                              <SelectItem value="ND">North Dakota</SelectItem>
-                              <SelectItem value="OH">Ohio</SelectItem>
-                              <SelectItem value="OK">Oklahoma</SelectItem>
-                              <SelectItem value="OR">Oregon</SelectItem>
-                              <SelectItem value="PA">Pennsylvania</SelectItem>
-                              <SelectItem value="RI">Rhode Island</SelectItem>
-                              <SelectItem value="SC">South Carolina</SelectItem>
-                              <SelectItem value="SD">South Dakota</SelectItem>
-                              <SelectItem value="TN">Tennessee</SelectItem>
-                              <SelectItem value="TX">Texas</SelectItem>
-                              <SelectItem value="UT">Utah</SelectItem>
-                              <SelectItem value="VT">Vermont</SelectItem>
-                              <SelectItem value="VA">Virginia</SelectItem>
-                              <SelectItem value="WA">Washington</SelectItem>
-                              <SelectItem value="WV">West Virginia</SelectItem>
-                              <SelectItem value="WI">Wisconsin</SelectItem>
-                              <SelectItem value="WY">Wyoming</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {validationErrors.state && (
-                            <p className="text-xs text-red-500">{validationErrors.state}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
+                      <Input
+                        placeholder="City"
+                        value={editedPreferences.city}
+                        onChange={(e) => setEditedPreferences(prev => ({
+                          ...prev,
+                          city: e.target.value
+                        }))}
+                      />
+                      <Select
+                        value={editedPreferences.state}
+                        onValueChange={(value) => setEditedPreferences(prev => ({
+                          ...prev,
+                          state: value
+                        }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AL">Alabama</SelectItem>
+                          <SelectItem value="AK">Alaska</SelectItem>
+                          <SelectItem value="AZ">Arizona</SelectItem>
+                          <SelectItem value="AR">Arkansas</SelectItem>
+                          <SelectItem value="CA">California</SelectItem>
+                          <SelectItem value="CO">Colorado</SelectItem>
+                          <SelectItem value="CT">Connecticut</SelectItem>
+                          <SelectItem value="DE">Delaware</SelectItem>
+                          <SelectItem value="FL">Florida</SelectItem>
+                          <SelectItem value="GA">Georgia</SelectItem>
+                          <SelectItem value="HI">Hawaii</SelectItem>
+                          <SelectItem value="ID">Idaho</SelectItem>
+                          <SelectItem value="IL">Illinois</SelectItem>
+                          <SelectItem value="IN">Indiana</SelectItem>
+                          <SelectItem value="IA">Iowa</SelectItem>
+                          <SelectItem value="KS">Kansas</SelectItem>
+                          <SelectItem value="KY">Kentucky</SelectItem>
+                          <SelectItem value="LA">Louisiana</SelectItem>
+                          <SelectItem value="ME">Maine</SelectItem>
+                          <SelectItem value="MD">Maryland</SelectItem>
+                          <SelectItem value="MA">Massachusetts</SelectItem>
+                          <SelectItem value="MI">Michigan</SelectItem>
+                          <SelectItem value="MN">Minnesota</SelectItem>
+                          <SelectItem value="MS">Mississippi</SelectItem>
+                          <SelectItem value="MO">Missouri</SelectItem>
+                          <SelectItem value="MT">Montana</SelectItem>
+                          <SelectItem value="NE">Nebraska</SelectItem>
+                          <SelectItem value="NV">Nevada</SelectItem>
+                          <SelectItem value="NH">New Hampshire</SelectItem>
+                          <SelectItem value="NJ">New Jersey</SelectItem>
+                          <SelectItem value="NM">New Mexico</SelectItem>
+                          <SelectItem value="NY">New York</SelectItem>
+                          <SelectItem value="NC">North Carolina</SelectItem>
+                          <SelectItem value="ND">North Dakota</SelectItem>
+                          <SelectItem value="OH">Ohio</SelectItem>
+                          <SelectItem value="OK">Oklahoma</SelectItem>
+                          <SelectItem value="OR">Oregon</SelectItem>
+                          <SelectItem value="PA">Pennsylvania</SelectItem>
+                          <SelectItem value="RI">Rhode Island</SelectItem>
+                          <SelectItem value="SC">South Carolina</SelectItem>
+                          <SelectItem value="SD">South Dakota</SelectItem>
+                          <SelectItem value="TN">Tennessee</SelectItem>
+                          <SelectItem value="TX">Texas</SelectItem>
+                          <SelectItem value="UT">Utah</SelectItem>
+                          <SelectItem value="VT">Vermont</SelectItem>
+                          <SelectItem value="VA">Virginia</SelectItem>
+                          <SelectItem value="WA">Washington</SelectItem>
+                          <SelectItem value="WV">West Virginia</SelectItem>
+                          <SelectItem value="WI">Wisconsin</SelectItem>
+                          <SelectItem value="WY">Wyoming</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center space-x-2">
                         <Checkbox
-                          id="destination"
+                          id="isDestination"
                           checked={editedPreferences.isDestination}
-                          onCheckedChange={(checked) => {
-                            setEditedPreferences(prev => ({
-                              ...prev,
-                              isDestination: checked as boolean
-                            }));
-                            // Clear state error if it's a destination wedding
-                            if (checked && validationErrors.state) {
-                              setValidationErrors(prev => ({
-                                ...prev,
-                                state: ''
-                              }));
-                            }
-                          }}
+                          onCheckedChange={(checked) => setEditedPreferences(prev => ({
+                            ...prev,
+                            isDestination: checked as boolean
+                          }))}
                         />
-                        <label
-                          htmlFor="destination"
-                          className="text-xs text-sage-600 cursor-pointer"
-                        >
-                          This is a destination wedding
+                        <label htmlFor="isDestination" className="text-sm text-sage-600">
+                          Destination Wedding
                         </label>
                       </div>
                     </div>
                   ) : (
                     <div>
                       <p className="text-lg font-medium bg-gradient-to-r from-sage-800 to-sage-700 bg-clip-text text-transparent">
-                        {budgetData.location.city}
-                        {budgetData.location.state && `, ${budgetData.location.state}`}
+                        {locationDisplay}
                       </p>
-                      {budgetData.location.isDestination && (
+                      {budgetData.location?.isDestination && (
                         <p className="text-sm text-sage-600 mt-1">Destination Wedding</p>
                       )}
                     </div>

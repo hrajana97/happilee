@@ -22,7 +22,6 @@ import { AIContactDialog } from "@/components/vendors/ai-contact-dialog"
 import { storage } from "@/lib/storage"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { AssistantTooltip } from "@/components/assistant/assistant-tooltip"
 import { QuoteTemplateDialog } from "@/components/vendors/quote-template-dialog"
 
 interface Venue {
@@ -436,13 +435,9 @@ within a price range of ${priceRangeText} sorted by ${sortText}.`
               </DialogContent>
             </Dialog>
 
-            <AssistantTooltip
-              tip="Compare different venues side by side! Upload pricing sheets or manually enter package details to make informed decisions. Perfect for analyzing costs, capacity, and included services."
-            >
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/vendors/venues/compare">Compare Venues</Link>
-              </Button>
-            </AssistantTooltip>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/vendors/venues/compare">Compare Venues</Link>
+            </Button>
             <Button
               variant="outline"
               onClick={() => {

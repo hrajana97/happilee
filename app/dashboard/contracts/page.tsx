@@ -17,7 +17,6 @@ import { Label } from "@/components/ui/label"
 import { FileUpload } from "@/components/vendors/file-upload"
 import { toast } from "@/components/ui/use-toast"
 import { ContractDisplay } from "@/components/contracts/contract-display"
-import { AssistantTooltip } from "@/components/assistant/assistant-tooltip"
 import Link from "next/link"
 
 // Sample contract data (replace with actual data fetching)
@@ -152,7 +151,6 @@ export default function ContractsPage() {
             ))}
           </CardContent>
         </Card>
-        <AssistantTooltip />
       </div>
     </div>
   )

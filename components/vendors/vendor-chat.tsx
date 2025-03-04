@@ -8,10 +8,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { VendorCategory, Vendor } from "@/app/dashboard/vendors/[categoryId]/page"
 
+type MessageSender = "user" | "vendor"
+
 type Message = {
   id: string
   content: string
-  sender: "user" | "vendor" | "assistant"
+  sender: MessageSender
   timestamp: Date
 }
 
@@ -43,7 +45,7 @@ export function VendorChat({ category, vendor }: VendorChatProps) {
         {
           id: "1",
           content: `Welcome! I'm here to help you communicate with ${vendor.name}. What would you like to know?`,
-          sender: "assistant",
+          sender: "vendor",
           timestamp: new Date(),
         },
       ])
@@ -53,7 +55,7 @@ export function VendorChat({ category, vendor }: VendorChatProps) {
         {
           id: "1",
           content: `Let me help you find the perfect ${category.name.toLowerCase()} for your wedding. What are your requirements?`,
-          sender: "assistant",
+          sender: "vendor",
           timestamp: new Date(),
         },
       ])
@@ -79,7 +81,7 @@ export function VendorChat({ category, vendor }: VendorChatProps) {
       const response: Message = {
         id: Math.random().toString(),
         content: generateResponse(userMessage.content, vendor, category),
-        sender: vendor ? "vendor" : "assistant",
+        sender: vendor ? "vendor" : "vendor",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, response])
@@ -191,7 +193,7 @@ export function VendorChat({ category, vendor }: VendorChatProps) {
                     const response: Message = {
                       id: Math.random().toString(),
                       content: `Great! I've noted your preference for ${date}. I'll confirm this appointment and send you a calendar invite shortly.`,
-                      sender: vendor ? "vendor" : "assistant",
+                      sender: vendor ? "vendor" : "vendor",
                       timestamp: new Date(),
                     }
                     setMessages((prev) => [...prev, response])

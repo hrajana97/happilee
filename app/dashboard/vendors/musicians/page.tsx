@@ -23,7 +23,6 @@ import { QuoteTemplateDialog } from "@/components/vendors/quote-template-dialog"
 import { storage } from "@/lib/storage"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { AssistantTooltip } from "@/components/assistant/assistant-tooltip"
 import React from "react"
 
 interface Musician {
@@ -198,163 +197,157 @@ export default function MusiciansPage() {
   return (
     <div className="p-8">
       <div className="mx-auto max-w-7xl">
-        <AssistantTooltip
-          tip="Compare different musicians and DJs side by side! Upload pricing sheets or manually enter package details to make informed decisions. Perfect for analyzing costs, equipment included, and making your final choice."
-          initialShow={true}
-          side="top"
-        >
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-8">
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/dashboard/vendors">
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              </Button>
-              <div>
-                <h1 className="text-2xl font-semibold text-sage-900">Wedding Musicians & DJs</h1>
-                <p className="mt-2 text-sage-600">Find and manage your wedding entertainment</p>
-              </div>
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              <Dialog open={showFilters} onOpenChange={setShowFilters}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <SlidersHorizontal className="mr-2 h-4 w-4" />
-                    Filters
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Filter Musicians</DialogTitle>
-                    <DialogDescription>Refine your search with specific criteria</DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label>Location</Label>
-                      <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select location" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Locations</SelectItem>
-                          {locations.map((location) => (
-                            <SelectItem key={location} value={location}>
-                              {location}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Type</Label>
-                      <Select value={selectedType} onValueChange={setSelectedType}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Types</SelectItem>
-                          {types.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Genre</Label>
-                      <Select value={selectedGenre} onValueChange={setSelectedGenre}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select genre" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Genres</SelectItem>
-                          {genres.map((genre) => (
-                            <SelectItem key={genre} value={genre}>
-                              {genre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Price Range</Label>
-                      <div className="pt-4 px-2">
-                        <Slider
-                          value={priceRange}
-                          min={0}
-                          max={10000}
-                          step={500}
-                          onValueChange={(value: number[]) => setPriceRange([value[0], value[1]])}
-                        />
-                      </div>
-                      <div className="flex justify-between text-sm text-sage-600">
-                        <span>${priceRange[0].toLocaleString()}</span>
-                        <span>${priceRange[1].toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Sort By</Label>
-                      <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sort by..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="rating">Highest Rated</SelectItem>
-                          <SelectItem value="price-low">Price: Low to High</SelectItem>
-                          <SelectItem value="price-high">Price: High to Low</SelectItem>
-                          <SelectItem value="reviews">Most Reviews</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              <Button variant="outline" asChild>
-                <Link href="/dashboard/vendors/musicians/compare">Compare Musicians</Link>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSelectedVendor(null)
-                  setShowQuoteDialog(true)
-                }}
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                Quote Request Template
-              </Button>
-              <Dialog open={showAddVendor} onOpenChange={setShowAddVendor}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Musician
-                  </Button>
-                </DialogTrigger>
-                <DialogContent aria-describedby={`${dialogId}-desc`}>
-                  <DialogHeader>
-                    <DialogTitle>Add New Musician</DialogTitle>
-                    <DialogDescription id={`${dialogId}-desc`}>
-                      Add a musician or band you've found to keep track of all your options.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input id="name" placeholder="Enter name or band name" />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="instagram">Instagram Handle</Label>
-                      <Input id="instagram" placeholder="@handle" />
-                    </div>
-                    <Button className="w-full" onClick={() => setShowAddVendor(false)}>
-                      Add Musician
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-8">
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/dashboard/vendors">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-2xl font-semibold text-sage-900">Musicians & DJs</h1>
+              <p className="mt-2 text-sage-600">{getSummaryText()}</p>
             </div>
           </div>
-        </AssistantTooltip>
+          <div className="ml-auto flex items-center gap-2">
+            <Dialog open={showFilters} onOpenChange={setShowFilters}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  Filters
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Filter Musicians</DialogTitle>
+                  <DialogDescription>Refine your search with specific criteria</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label>Location</Label>
+                    <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Locations</SelectItem>
+                        {locations.map((location) => (
+                          <SelectItem key={location} value={location}>
+                            {location}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Type</Label>
+                    <Select value={selectedType} onValueChange={setSelectedType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        {types.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Genre</Label>
+                    <Select value={selectedGenre} onValueChange={setSelectedGenre}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select genre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Genres</SelectItem>
+                        {genres.map((genre) => (
+                          <SelectItem key={genre} value={genre}>
+                            {genre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Price Range</Label>
+                    <div className="pt-4 px-2">
+                      <Slider
+                        value={priceRange}
+                        min={0}
+                        max={10000}
+                        step={500}
+                        onValueChange={(value: number[]) => setPriceRange([value[0], value[1]])}
+                      />
+                    </div>
+                    <div className="flex justify-between text-sm text-sage-600">
+                      <span>${priceRange[0].toLocaleString()}</span>
+                      <span>${priceRange[1].toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Sort By</Label>
+                    <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sort by..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="rating">Highest Rated</SelectItem>
+                        <SelectItem value="price-low">Price: Low to High</SelectItem>
+                        <SelectItem value="price-high">Price: High to Low</SelectItem>
+                        <SelectItem value="reviews">Most Reviews</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/vendors/musicians/compare">Compare Musicians</Link>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedVendor(null)
+                setShowQuoteDialog(true)
+              }}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Quote Request Template
+            </Button>
+            <Dialog open={showAddVendor} onOpenChange={setShowAddVendor}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Musician
+                </Button>
+              </DialogTrigger>
+              <DialogContent aria-describedby={`${dialogId}-desc`}>
+                <DialogHeader>
+                  <DialogTitle>Add New Musician</DialogTitle>
+                  <DialogDescription id={`${dialogId}-desc`}>
+                    Add a musician or band you've found to keep track of all your options.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input id="name" placeholder="Enter name or band name" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="instagram">Instagram Handle</Label>
+                    <Input id="instagram" placeholder="@handle" />
+                  </div>
+                  <Button className="w-full" onClick={() => setShowAddVendor(false)}>
+                    Add Musician
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
         <div className="mb-6 space-y-4">
           <Input
             placeholder="Search musicians..."
@@ -362,7 +355,20 @@ export default function MusiciansPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-md"
           />
-          <p className="text-sm text-sage-600">{getSummaryText()}</p>
+          <div className="flex items-center gap-2">
+            <Label>Sort by:</Label>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rating">Rating</SelectItem>
+                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                <SelectItem value="price-high">Price: High to Low</SelectItem>
+                <SelectItem value="reviews">Number of Reviews</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <Tabs defaultValue="all" className="space-y-6">
@@ -515,7 +521,7 @@ function MusicianCard({ musician, onContact }: MusicianCardProps) {
           </div>
           <AICommunicationSummary
             vendorName={musician.name}
-            lastContact={musician.lastContact}
+            lastContact={musician.lastContact || null}
             emailCount={musician.emailThread}
             status={musician.contacted ? "in_progress" : "not_started"}
             nextStep={musician.contacted ? "Follow up on song list and equipment details" : "Initial contact"}
