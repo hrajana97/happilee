@@ -8,13 +8,20 @@ import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { BudgetData, UserData } from "@/types/budget"
+import type { BudgetData } from "@/types/budget"
 import { storage } from "@/lib/storage"
 import budgetStorage from "@/lib/budget-storage"
 import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { useSearchParams } from 'next/navigation';
+import { Switch } from "@/components/ui/switch"
+
+// Add formatCurrency helper function
+const formatCurrency = (amount: string | number) => {
+  const numericAmount = typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.]/g, '')) : amount;
+  return isNaN(numericAmount) ? '0' : numericAmount.toLocaleString('en-US');
+};
 
 interface BudgetFormData {
   totalBudget: string;
@@ -24,18 +31,83 @@ interface BudgetFormData {
   city: string;
   state: string;
   country: string;
-  cateringType: string;
-  barType: string;
-  photoVideo: string;
-  coverage: string;
-  floralStyle: string;
-  diyElements: string;
-  musicChoice: string;
-  beautyCoverage: string;
-  planningAssistance: string;
+  
+  // Venue
+  separateVenues: boolean;
+  ceremonyVenueType: typeof VENUE_TYPE_OPTIONS[number];
+  
+  // Catering
+  cateringStyle: typeof CATERING_OPTIONS[number];
+  barType: typeof BAR_OPTIONS[number];
+  
+  // Hair and Makeup
+  beautyStyle: typeof BEAUTY_STYLE_OPTIONS[number];
+  bridesmaidCount: string;
+  makeupFor: string[];
+  makeupServices: string[];
+  
+  // Transportation
+  needTransportation: boolean;
+  transportationType: typeof TRANSPORTATION_TYPE_OPTIONS[number];
+  transportationGuestCount: string;
+  transportationHours: string;
+  
+  // Favors
+  includeFavors: boolean;
+  favorCostPerPerson: string;
+  
+  // Stationery
+  stationeryType: typeof STATIONERY_TYPE_OPTIONS[number];
+  
+  // Florals
+  floralStyle: typeof FLORAL_STYLE_OPTIONS[number];
+  bouquetCount: string;
+  needCeremonyFlowers: boolean;
+  centerpeiceCount: string;
+  needExtraDecor: boolean;
+  weddingPartySize: typeof WEDDING_PARTY_SIZES[number];
+  ceremonyDecorLevel: typeof CEREMONY_DECOR_LEVELS[number];
+  additionalDecorAreas: typeof ADDITIONAL_DECOR_AREAS[number];
+  
+  // Attire
+  dressType: typeof DRESS_TYPE_OPTIONS[number];
+  dressBudget: string;
+  suitBudget: string;
+  accessoriesBudget: string;
+  needAlterations: boolean;
+  needReceptionDress: boolean;
+  receptionDressBudget: string;
+  suitCount: string;
+  
+  // Photography
+  photoVideo: typeof PHOTO_VIDEO_OPTIONS[number];
+  coverage: typeof COVERAGE_OPTIONS[number];
+  coverageHours: string;
+  
+  // Entertainment
+  ceremonyMusic: typeof CEREMONY_MUSIC_OPTIONS[number];
+  receptionMusic: typeof RECEPTION_MUSIC_OPTIONS[number];
+  musicHours: string;
 }
 
-const BudgetSurvey = () => {
+// Update the predefined options
+const CATERING_OPTIONS = ["Plated", "Buffet", "Family Style", "Food Stations", "Heavy Appetizers"] as const;
+const BAR_OPTIONS = ["Full Open Bar", "Beer & Wine Only", "Limited Open Bar", "Cash Bar", "No Alcohol"] as const;
+const PHOTO_VIDEO_OPTIONS = ["Both Photography & Videography", "Photography Only", "Videography Only"] as const;
+const COVERAGE_OPTIONS = ["Full Day Coverage", "Partial Day Coverage", "Ceremony & Portraits Only"] as const;
+const FLORAL_STYLE_OPTIONS = ["Fresh", "Artificial", "Mixed"] as const;
+const CEREMONY_MUSIC_OPTIONS = ["Live", "Recorded", "None"] as const;
+const RECEPTION_MUSIC_OPTIONS = ["DJ", "Band", "Both", "Playlist"] as const;
+const BEAUTY_STYLE_OPTIONS = ["DIY", "Bride Only", "Bride and Party"] as const;
+const VENUE_TYPE_OPTIONS = ["paid", "church", "temple", "family-property", "other"] as const;
+const TRANSPORTATION_TYPE_OPTIONS = ["None", "Venue to Venue", "Hotel to Venue", "Both"] as const;
+const STATIONERY_TYPE_OPTIONS = ["Digital", "Print", "Both"] as const;
+const DRESS_TYPE_OPTIONS = ["Custom", "Off Rack"] as const;
+const WEDDING_PARTY_SIZES = ["Small (1-4 people)", "Medium (5-8 people)", "Large (9+ people)"] as const;
+const CEREMONY_DECOR_LEVELS = ["Minimal", "Standard", "Elaborate"] as const;
+const ADDITIONAL_DECOR_AREAS = ["None", "Some", "Extensive"] as const;
+
+export default function BudgetSurvey() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [budgetData, setBudgetData] = useState<BudgetFormData>({
@@ -46,27 +118,55 @@ const BudgetSurvey = () => {
     city: '',
     state: '',
     country: '',
-    cateringType: '',
-    barType: '',
-    photoVideo: '',
-    coverage: '',
-    floralStyle: '',
-    diyElements: '',
-    musicChoice: '',
-    beautyCoverage: '',
-    planningAssistance: '',
+    separateVenues: false,
+    ceremonyVenueType: '' as typeof VENUE_TYPE_OPTIONS[number],
+    cateringStyle: '' as typeof CATERING_OPTIONS[number],
+    barType: '' as typeof BAR_OPTIONS[number],
+    beautyStyle: '' as typeof BEAUTY_STYLE_OPTIONS[number],
+    bridesmaidCount: '',
+    makeupFor: [],
+    makeupServices: [],
+    needTransportation: false,
+    transportationType: '' as typeof TRANSPORTATION_TYPE_OPTIONS[number],
+    transportationGuestCount: '',
+    transportationHours: '',
+    includeFavors: false,
+    favorCostPerPerson: '',
+    stationeryType: '' as typeof STATIONERY_TYPE_OPTIONS[number],
+    floralStyle: '' as typeof FLORAL_STYLE_OPTIONS[number],
+    bouquetCount: '',
+    needCeremonyFlowers: false,
+    centerpeiceCount: '',
+    needExtraDecor: false,
+    dressType: '' as typeof DRESS_TYPE_OPTIONS[number],
+    dressBudget: '',
+    suitBudget: '',
+    accessoriesBudget: '',
+    needAlterations: false,
+    needReceptionDress: false,
+    receptionDressBudget: '',
+    suitCount: '',
+    photoVideo: '' as typeof PHOTO_VIDEO_OPTIONS[number],
+    coverage: '' as typeof COVERAGE_OPTIONS[number],
+    coverageHours: '',
+    ceremonyMusic: '' as typeof CEREMONY_MUSIC_OPTIONS[number],
+    receptionMusic: '' as typeof RECEPTION_MUSIC_OPTIONS[number],
+    musicHours: '',
+    weddingPartySize: '' as typeof WEDDING_PARTY_SIZES[number],
+    ceremonyDecorLevel: '' as typeof CEREMONY_DECOR_LEVELS[number],
+    additionalDecorAreas: '' as typeof ADDITIONAL_DECOR_AREAS[number],
   });
 
-  // Load initial user data and handle prefill
   useEffect(() => {
     const userData = storage.getUserData();
     const prefill = searchParams.get('prefill') === 'true';
     const finalStep = searchParams.get('step') === 'final';
 
     if (prefill) {
+      const budgetParam = searchParams.get('budget');
       setBudgetData(prevData => ({
         ...prevData,
-        totalBudget: searchParams.get('budget') || '',
+        totalBudget: budgetParam ? formatCurrency(budgetParam) : '',
         guestCount: searchParams.get('guestCount') || '',
         weddingDate: searchParams.get('weddingDate') || '',
         isDestination: searchParams.get('isDestination') === 'true',
@@ -76,12 +176,12 @@ const BudgetSurvey = () => {
       }));
 
       if (finalStep) {
-        setStep(7); // Set to last step
+        setStep(7);
       }
     } else if (userData) {
       setBudgetData(prevData => ({
         ...prevData,
-        totalBudget: userData.budget ? userData.budget.toString() : '',
+        totalBudget: userData.budget ? formatCurrency(userData.budget) : '',
         guestCount: userData.guestCount ? userData.guestCount.toString() : '',
         weddingDate: userData.weddingDate ? userData.weddingDate.split('T')[0] : '',
       }));
@@ -107,8 +207,8 @@ const BudgetSurvey = () => {
 
   const calculateBudget = () => {
     try {
-      // Parse the total budget as a number
       const totalBudget = parseFloat(budgetData.totalBudget.replace(/[^0-9.]/g, ''));
+      const guestCount = parseInt(budgetData.guestCount) || 0;
       
       if (isNaN(totalBudget)) {
         alert('Please enter a valid total budget');
@@ -121,32 +221,91 @@ const BudgetSurvey = () => {
       if (budgetData.photoVideo === "Both Photography & Videography") {
         priorities.push("photography");
       }
-      if (budgetData.floralStyle === "Elaborate & Luxurious") {
+      if (budgetData.floralStyle === "Fresh") {
         priorities.push("florals");
       }
-      if (budgetData.musicChoice === "Live Band" || budgetData.musicChoice === "Both DJ & Band") {
+      if (budgetData.receptionMusic === "Band" || budgetData.receptionMusic === "Both") {
         priorities.push("entertainment");
       }
-      if (budgetData.planningAssistance === "Full Wedding Planner") {
-        priorities.push("planner");
-      }
 
-      // Create preferences object
+      // Create comprehensive preferences object
       const preferences = {
-        cateringStyle: budgetData.cateringType,
-        barService: budgetData.barType,
+        // Basic Details
+        totalBudget: totalBudget,
+        guestCount: guestCount,
+        weddingDate: budgetData.weddingDate,
+        
+        // Location
+        isDestination: budgetData.isDestination,
+        city: budgetData.city,
+        state: budgetData.state,
+        country: budgetData.isDestination ? budgetData.country : "United States",
+
+        // Venue & Location
+        separateVenues: budgetData.separateVenues,
+        ceremonyVenueType: budgetData.ceremonyVenueType,
+        
+        // Catering & Bar
+        cateringStyle: budgetData.cateringStyle,
+        barType: budgetData.barType,
+        
+        // Photography & Video
         photoVideo: budgetData.photoVideo,
         coverage: budgetData.coverage,
+        coverageHours: budgetData.coverageHours,
+        
+        // Florals & Decor
         floralStyle: budgetData.floralStyle,
-        diyElements: budgetData.diyElements,
-        musicChoice: budgetData.musicChoice,
-        beautyCoverage: budgetData.beautyCoverage,
-        planningAssistance: budgetData.planningAssistance
+        bouquetCount: budgetData.bouquetCount,
+        needCeremonyFlowers: budgetData.needCeremonyFlowers,
+        centerpeiceCount: budgetData.centerpeiceCount,
+        needExtraDecor: budgetData.needExtraDecor,
+        weddingPartySize: budgetData.weddingPartySize,
+        ceremonyDecorLevel: budgetData.ceremonyDecorLevel,
+        additionalDecorAreas: budgetData.additionalDecorAreas,
+        
+        // Entertainment
+        ceremonyMusic: budgetData.ceremonyMusic,
+        receptionMusic: budgetData.receptionMusic,
+        musicHours: budgetData.musicHours,
+        
+        // Beauty Services
+        beautyStyle: budgetData.beautyStyle,
+        bridesmaidCount: budgetData.bridesmaidCount,
+        makeupFor: budgetData.makeupFor,
+        makeupServices: budgetData.makeupServices,
+        
+        // Transportation
+        needTransportation: budgetData.needTransportation,
+        transportationType: budgetData.transportationType,
+        transportationGuestCount: budgetData.transportationGuestCount,
+        transportationHours: budgetData.transportationHours,
+        
+        // Favors
+        includeFavors: budgetData.includeFavors,
+        favorCostPerPerson: budgetData.favorCostPerPerson,
+        
+        // Stationery
+        stationeryType: budgetData.stationeryType,
+        
+        // Attire
+        dressType: budgetData.dressType,
+        dressBudget: parseFloat(budgetData.dressBudget) || 0,
+        receptionDressBudget: budgetData.needReceptionDress ? (parseFloat(budgetData.receptionDressBudget) || 0) : 0,
+        suitBudget: parseFloat(budgetData.suitBudget) || 0,
+        accessoriesBudget: parseFloat(budgetData.accessoriesBudget) || 0,
+        needAlterations: budgetData.needAlterations,
+        needReceptionDress: budgetData.needReceptionDress,
+        suitCount: budgetData.suitCount,
+        attireTotalBudget: (parseFloat(budgetData.dressBudget) || 0) +
+                          (budgetData.needReceptionDress ? (parseFloat(budgetData.receptionDressBudget) || 0) : 0) +
+                          (parseFloat(budgetData.suitBudget) || 0) +
+                          (parseFloat(budgetData.accessoriesBudget) || 0)
       };
 
       // Calculate the budget with preferences
       const result = budgetStorage.calculateBudget(
-        parseInt(budgetData.guestCount) || 0,
+        guestCount,
         {
           city: budgetData.city,
           state: budgetData.state,
@@ -158,43 +317,26 @@ const BudgetSurvey = () => {
         preferences
       );
 
-      // Store the result in localStorage for the breakdown page
-      const userData = {
+      // Store the result using the correct type from types/budget
+      storage.setUserData({
+        name: "", // Required by UserData type
         budget: totalBudget,
         weddingDate: budgetData.weddingDate,
-        guestCount: parseInt(budgetData.guestCount) || 0,
+        guestCount: guestCount,
         calculatedBudget: {
-          categories: result.categories,
-          rationale: result.rationale,
-          dayOfWeek: 'saturday',
-          adjustedFactors: {
-            seasonal: 1,
-            location: 1
+          ...result,
+          location: {
+            city: budgetData.city,
+            state: budgetData.state,
+            country: budgetData.isDestination ? budgetData.country : "United States",
+            isDestination: budgetData.isDestination,
+            weddingDate: budgetData.weddingDate
           }
         },
-        preferences: {
-          cateringStyle: budgetData.cateringType,
-          barService: budgetData.barType,
-          photoVideo: budgetData.photoVideo,
-          coverage: budgetData.coverage,
-          floralStyle: budgetData.floralStyle,
-          diyElements: budgetData.diyElements,
-          musicChoice: budgetData.musicChoice,
-          beautyCoverage: budgetData.beautyCoverage,
-          planningAssistance: budgetData.planningAssistance
-        },
-        location: {
-          city: budgetData.city,
-          state: budgetData.state,
-          country: budgetData.isDestination ? budgetData.country : "United States",
-          isDestination: budgetData.isDestination,
-          weddingDate: budgetData.weddingDate
-        },
-        lastUpdated: new Date().toISOString()
-      } as Partial<UserData>;
-      storage.setUserData(userData);
+        preferences
+      });
 
-      // Navigate to the budget breakdown page
+      // Navigate to budget breakdown
       window.location.href = '/budget-breakdown';
     } catch (error) {
       console.error('Error calculating budget:', error);
@@ -252,17 +394,6 @@ const BudgetSurvey = () => {
     window.location.href = '/dashboard/budget';
   };
 
-  // Add predefined options
-  const CATERING_OPTIONS = ["Plated", "Buffet", "Family Style", "Food Stations", "Heavy Appetizers"];
-  const BAR_OPTIONS = ["Full Open Bar", "Beer & Wine Only", "Limited Open Bar", "Cash Bar", "No Alcohol"];
-  const PHOTO_VIDEO_OPTIONS = ["Both Photography & Videography", "Photography Only", "Videography Only"];
-  const COVERAGE_OPTIONS = ["Full Day Coverage", "Partial Day Coverage", "Ceremony & Portraits Only"];
-  const FLORAL_STYLE_OPTIONS = ["Elaborate & Luxurious", "Modern & Minimalist", "Garden Style", "Wildflower Style", "Simple & Classic"];
-  const DIY_OPTIONS = ["Yes, planning DIY elements", "No DIY elements planned", "Maybe, still deciding"];
-  const MUSIC_OPTIONS = ["DJ", "Live Band", "Both DJ & Band", "Other Live Music", "Playlist Only"];
-  const BEAUTY_COVERAGE_OPTIONS = ["Full Wedding Party", "Bride Only", "Bride & Bridesmaids", "None Needed"];
-  const PLANNER_OPTIONS = ["Full Wedding Planner", "Month-of Coordinator", "Day-of Coordinator", "No Professional Help"];
-
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-sage-50/50 to-white p-4 sm:p-8">
       <div className="mx-auto max-w-2xl">
@@ -286,8 +417,8 @@ const BudgetSurvey = () => {
         </div>
 
         <div className="flex items-center gap-4 mb-8">
-          <Progress value={((step) / 8) * 100} className="flex-1 bg-sage-200 [&>[role=progressbar]]:bg-sage-700" />
-          <span className="text-sm font-medium text-sage-600">{step + 1}/8</span>
+          <Progress value={((step) / 12) * 100} className="flex-1 bg-sage-200 [&>[role=progressbar]]:bg-sage-700" />
+          <span className="text-sm font-medium text-sage-600">{step + 1}/12</span>
         </div>
 
         {step === 0 && (
@@ -317,9 +448,6 @@ const BudgetSurvey = () => {
                   value={budgetData.guestCount}
                   onChange={handleInputChange}
                 />
-                <p className="text-sm text-sage-600">
-                  This affects venue size, catering costs, and other per-person expenses.
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -330,9 +458,6 @@ const BudgetSurvey = () => {
                   value={budgetData.totalBudget}
                   onChange={handleInputChange}
                 />
-                <p className="text-sm text-sage-600">
-                  This helps us ensure our recommendations stay within your comfort zone.
-                </p>
               </div>
 
               <Button 
@@ -348,21 +473,9 @@ const BudgetSurvey = () => {
         {step === 1 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>General Overview</CardTitle>
+              <CardTitle>Location Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Maximum Budget</Label>
-                <p className="text-sm text-sage-600">What's the maximum amount you're willing to spend on your wedding? This helps us ensure our recommendations stay within your comfort zone. You can always adjust this later.</p>
-                <Input
-                  type="text"
-                  name="totalBudget"
-                  placeholder="Enter amount"
-                  value={budgetData.totalBudget}
-                  onChange={handleInputChange}
-                />
-              </div>
-
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -374,116 +487,95 @@ const BudgetSurvey = () => {
                 </div>
               </div>
 
-                  <div className="space-y-2">
-                    <Label>City</Label>
-                    <Input
+              <div className="space-y-2">
+                <Label>City</Label>
+                <Input
                   type="text"
                   name="city"
-                      placeholder="Enter city"
+                  placeholder="Enter city"
                   value={budgetData.city}
                   onChange={handleInputChange}
-                    />
-                  </div>
+                />
+              </div>
 
-              {budgetData.isDestination ? (
-                  <div className="space-y-2">
-                    <Label>Country</Label>
-                    <Input
-                    type="text"
-                    name="country"
-                      placeholder="Enter country"
-                    value={budgetData.country}
-                    onChange={handleInputChange}
-                    />
-                  </div>
-              ) : (
-                  <div className="space-y-2">
-                    <Label>State</Label>
-                    <Select
+              {!budgetData.isDestination && (
+                <div className="space-y-2">
+                  <Label>State</Label>
+                  <Select
                     value={budgetData.state}
                     onValueChange={(value) => setBudgetData(prev => ({ ...prev, state: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="AL">Alabama</SelectItem>
-                        <SelectItem value="AK">Alaska</SelectItem>
-                        <SelectItem value="AZ">Arizona</SelectItem>
-                        <SelectItem value="AR">Arkansas</SelectItem>
-                        <SelectItem value="CA">California</SelectItem>
-                        <SelectItem value="CO">Colorado</SelectItem>
-                        <SelectItem value="CT">Connecticut</SelectItem>
-                        <SelectItem value="DE">Delaware</SelectItem>
-                        <SelectItem value="FL">Florida</SelectItem>
-                        <SelectItem value="GA">Georgia</SelectItem>
-                        <SelectItem value="HI">Hawaii</SelectItem>
-                        <SelectItem value="ID">Idaho</SelectItem>
-                        <SelectItem value="IL">Illinois</SelectItem>
-                        <SelectItem value="IN">Indiana</SelectItem>
-                        <SelectItem value="IA">Iowa</SelectItem>
-                        <SelectItem value="KS">Kansas</SelectItem>
-                        <SelectItem value="KY">Kentucky</SelectItem>
-                        <SelectItem value="LA">Louisiana</SelectItem>
-                        <SelectItem value="ME">Maine</SelectItem>
-                        <SelectItem value="MD">Maryland</SelectItem>
-                        <SelectItem value="MA">Massachusetts</SelectItem>
-                        <SelectItem value="MI">Michigan</SelectItem>
-                        <SelectItem value="MN">Minnesota</SelectItem>
-                        <SelectItem value="MS">Mississippi</SelectItem>
-                        <SelectItem value="MO">Missouri</SelectItem>
-                        <SelectItem value="MT">Montana</SelectItem>
-                        <SelectItem value="NE">Nebraska</SelectItem>
-                        <SelectItem value="NV">Nevada</SelectItem>
-                        <SelectItem value="NH">New Hampshire</SelectItem>
-                        <SelectItem value="NJ">New Jersey</SelectItem>
-                        <SelectItem value="NM">New Mexico</SelectItem>
-                        <SelectItem value="NY">New York</SelectItem>
-                        <SelectItem value="NC">North Carolina</SelectItem>
-                        <SelectItem value="ND">North Dakota</SelectItem>
-                        <SelectItem value="OH">Ohio</SelectItem>
-                        <SelectItem value="OK">Oklahoma</SelectItem>
-                        <SelectItem value="OR">Oregon</SelectItem>
-                        <SelectItem value="PA">Pennsylvania</SelectItem>
-                        <SelectItem value="RI">Rhode Island</SelectItem>
-                        <SelectItem value="SC">South Carolina</SelectItem>
-                        <SelectItem value="SD">South Dakota</SelectItem>
-                        <SelectItem value="TN">Tennessee</SelectItem>
-                        <SelectItem value="TX">Texas</SelectItem>
-                        <SelectItem value="UT">Utah</SelectItem>
-                        <SelectItem value="VT">Vermont</SelectItem>
-                        <SelectItem value="VA">Virginia</SelectItem>
-                        <SelectItem value="WA">Washington</SelectItem>
-                        <SelectItem value="WV">West Virginia</SelectItem>
-                        <SelectItem value="WI">Wisconsin</SelectItem>
-                        <SelectItem value="WY">Wyoming</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AL">Alabama</SelectItem>
+                      <SelectItem value="AK">Alaska</SelectItem>
+                      <SelectItem value="AZ">Arizona</SelectItem>
+                      <SelectItem value="AR">Arkansas</SelectItem>
+                      <SelectItem value="CA">California</SelectItem>
+                      <SelectItem value="CO">Colorado</SelectItem>
+                      <SelectItem value="CT">Connecticut</SelectItem>
+                      <SelectItem value="DE">Delaware</SelectItem>
+                      <SelectItem value="FL">Florida</SelectItem>
+                      <SelectItem value="GA">Georgia</SelectItem>
+                      <SelectItem value="HI">Hawaii</SelectItem>
+                      <SelectItem value="ID">Idaho</SelectItem>
+                      <SelectItem value="IL">Illinois</SelectItem>
+                      <SelectItem value="IN">Indiana</SelectItem>
+                      <SelectItem value="IA">Iowa</SelectItem>
+                      <SelectItem value="KS">Kansas</SelectItem>
+                      <SelectItem value="KY">Kentucky</SelectItem>
+                      <SelectItem value="LA">Louisiana</SelectItem>
+                      <SelectItem value="ME">Maine</SelectItem>
+                      <SelectItem value="MD">Maryland</SelectItem>
+                      <SelectItem value="MA">Massachusetts</SelectItem>
+                      <SelectItem value="MI">Michigan</SelectItem>
+                      <SelectItem value="MN">Minnesota</SelectItem>
+                      <SelectItem value="MS">Mississippi</SelectItem>
+                      <SelectItem value="MO">Missouri</SelectItem>
+                      <SelectItem value="MT">Montana</SelectItem>
+                      <SelectItem value="NE">Nebraska</SelectItem>
+                      <SelectItem value="NV">Nevada</SelectItem>
+                      <SelectItem value="NH">New Hampshire</SelectItem>
+                      <SelectItem value="NJ">New Jersey</SelectItem>
+                      <SelectItem value="NM">New Mexico</SelectItem>
+                      <SelectItem value="NY">New York</SelectItem>
+                      <SelectItem value="NC">North Carolina</SelectItem>
+                      <SelectItem value="ND">North Dakota</SelectItem>
+                      <SelectItem value="OH">Ohio</SelectItem>
+                      <SelectItem value="OK">Oklahoma</SelectItem>
+                      <SelectItem value="OR">Oregon</SelectItem>
+                      <SelectItem value="PA">Pennsylvania</SelectItem>
+                      <SelectItem value="RI">Rhode Island</SelectItem>
+                      <SelectItem value="SC">South Carolina</SelectItem>
+                      <SelectItem value="SD">South Dakota</SelectItem>
+                      <SelectItem value="TN">Tennessee</SelectItem>
+                      <SelectItem value="TX">Texas</SelectItem>
+                      <SelectItem value="UT">Utah</SelectItem>
+                      <SelectItem value="VT">Vermont</SelectItem>
+                      <SelectItem value="VA">Virginia</SelectItem>
+                      <SelectItem value="WA">Washington</SelectItem>
+                      <SelectItem value="WV">West Virginia</SelectItem>
+                      <SelectItem value="WI">Wisconsin</SelectItem>
+                      <SelectItem value="WY">Wyoming</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
 
-                  <div className="space-y-2">
-                <Label>Guest Count</Label>
-                <p className="text-sm text-sage-600">The number of guests impacts catering, venue size, and other per-person costs.</p>
-                    <Input
-                  type="number"
-                  name="guestCount"
-                  placeholder="Guest Count"
-                  value={budgetData.guestCount}
-                  onChange={handleInputChange}
-                    />
-                  </div>
-
-              <div className="space-y-2">
-                <Label>Wedding Date</Label>
-                <p className="text-sm text-sage-600">Seasonal demand can affect pricing for venues and services.</p>
-                <Input
-                  type="date"
-                  name="weddingDate"
-                  value={budgetData.weddingDate}
-                  onChange={handleInputChange}
-                />
-            </div>
+              {budgetData.isDestination && (
+                <div className="space-y-2">
+                  <Label>Country</Label>
+                  <Input
+                    type="text"
+                    name="country"
+                    placeholder="Enter country"
+                    value={budgetData.country}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -496,17 +588,21 @@ const BudgetSurvey = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Photography and videography, or just one?</Label>
-                <p className="text-sm text-sage-600">Capturing memories can be done through photos, videos, or both.</p>
+                <p className="text-sm text-sage-600">Full photo & video packages average $4000-7000, while photography-only typically ranges $2500-4000.</p>
                 <Select
                   value={budgetData.photoVideo}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, photoVideo: value }))}
+                  onValueChange={(value: typeof PHOTO_VIDEO_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, photoVideo: value }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select coverage type" />
+                    <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PHOTO_VIDEO_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    {PHOTO_VIDEO_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -514,17 +610,21 @@ const BudgetSurvey = () => {
 
               <div className="space-y-2">
                 <Label>Coverage Length</Label>
-                <p className="text-sm text-sage-600">Full-day coverage ensures all moments are captured, but may cost more.</p>
+                <p className="text-sm text-sage-600">Full-day coverage (8-10 hours), partial day coverage (6 hours), or ceremony & portraits only (3-4 hours).</p>
                 <Select
                   value={budgetData.coverage}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, coverage: value }))}
+                  onValueChange={(value: typeof COVERAGE_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, coverage: value }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select coverage length" />
+                    <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {COVERAGE_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    {COVERAGE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -541,39 +641,91 @@ const BudgetSurvey = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Floral Style Preference</Label>
-                <p className="text-sm text-sage-600">Floral arrangements can range from simple to extravagant.</p>
+                <p className="text-sm text-sage-600">Fresh flowers are typically the baseline cost for floral budgets.</p>
                 <Select
                   value={budgetData.floralStyle}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, floralStyle: value }))}
+                  onValueChange={(value: typeof FLORAL_STYLE_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, floralStyle: value }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select floral style" />
+                    <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {FLORAL_STYLE_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    {FLORAL_STYLE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>DIY Elements</Label>
-                <p className="text-sm text-sage-600">DIY can save costs but requires time and effort.</p>
+                <Label>Wedding Party Size</Label>
+                <p className="text-sm text-sage-600">Each additional bouquet/boutonniere adds $150-250 for fresh flowers.</p>
                 <Select
-                  value={budgetData.diyElements}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, diyElements: value }))}
+                  value={budgetData.weddingPartySize}
+                  onValueChange={(value: typeof WEDDING_PARTY_SIZES[number]) => 
+                    setBudgetData(prev => ({ ...prev, weddingPartySize: value }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select DIY preference" />
+                    <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DIY_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    {WEDDING_PARTY_SIZES.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Ceremony Decor Level</Label>
+                <p className="text-sm text-sage-600">Standard decor typically includes an arch/altar arrangement ($500-800) plus aisle decorations.</p>
+                <Select
+                  value={budgetData.ceremonyDecorLevel}
+                  onValueChange={(value: typeof CEREMONY_DECOR_LEVELS[number]) => 
+                    setBudgetData(prev => ({ ...prev, ceremonyDecorLevel: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CEREMONY_DECOR_LEVELS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Additional Decor Areas</Label>
+                <p className="text-sm text-sage-600">Each additional decorated area (welcome signs, photo backdrops, lounge areas) typically adds $300-500.</p>
+                <Select
+                  value={budgetData.additionalDecorAreas}
+                  onValueChange={(value: typeof ADDITIONAL_DECOR_AREAS[number]) => 
+                    setBudgetData(prev => ({ ...prev, additionalDecorAreas: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ADDITIONAL_DECOR_AREAS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -581,26 +733,52 @@ const BudgetSurvey = () => {
         {step === 4 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Entertainment</CardTitle>
+              <CardTitle>Catering & Bar Service</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Music Choice</Label>
-                <p className="text-sm text-sage-600">Music choice can set the tone for your reception.</p>
+                <Label>Catering Style</Label>
+                <p className="text-sm text-sage-600">Plated dinners and food stations are typically higher cost options, while buffet style and heavy appetizers are mid-range options.</p>
                 <Select
-                  value={budgetData.musicChoice}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, musicChoice: value }))}
+                  value={budgetData.cateringStyle}
+                  onValueChange={(value: typeof CATERING_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, cateringStyle: value }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select music option" />
+                    <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {MUSIC_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    {CATERING_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Bar Service</Label>
+                <p className="text-sm text-sage-600">Full open bars typically cost $45-65 per guest.</p>
+                <Select
+                  value={budgetData.barType}
+                  onValueChange={(value: typeof BAR_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, barType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BAR_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -608,26 +786,43 @@ const BudgetSurvey = () => {
         {step === 5 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Attire & Beauty</CardTitle>
+              <CardTitle>Hair & Makeup</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Hair & Makeup Coverage</Label>
-                <p className="text-sm text-sage-600">Decide if you'll cover beauty costs for your party.</p>
+                <Label>Beauty Services</Label>
+                <p className="text-sm text-sage-600">Bridal hair and makeup averages $250-400. Adding the wedding party typically costs $100-150 per person.</p>
                 <Select
-                  value={budgetData.beautyCoverage}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, beautyCoverage: value }))}
+                  value={budgetData.beautyStyle}
+                  onValueChange={(value: typeof BEAUTY_STYLE_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, beautyStyle: value }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select beauty coverage" />
+                    <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BEAUTY_COVERAGE_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    {BEAUTY_STYLE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {budgetData.beautyStyle === 'Bride and Party' && (
+                <div className="space-y-2">
+                  <Label>Number of Bridesmaids</Label>
+                  <Input
+                    type="number"
+                    name="bridesmaidCount"
+                    placeholder="Enter number of bridesmaids"
+                    value={budgetData.bridesmaidCount}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -635,58 +830,72 @@ const BudgetSurvey = () => {
         {step === 6 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Logistics & Miscellaneous</CardTitle>
+              <CardTitle>Transportation</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Wedding Planner</Label>
-                <p className="text-sm text-sage-600">Decide on the level of planning assistance needed.</p>
+                <Label>Transportation Needs</Label>
+                <p className="text-sm text-sage-600">Basic sedan service starts at $400-600. Guest shuttles typically cost $500-800 per vehicle.</p>
                 <Select
-                  value={budgetData.planningAssistance}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, planningAssistance: value }))}
+                  value={budgetData.transportationType}
+                  onValueChange={(value: typeof TRANSPORTATION_TYPE_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, transportationType: value }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select planner type" />
+                    <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PLANNER_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    {TRANSPORTATION_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-            </div>
+              </div>
 
-            <div className="space-y-2">
-                <Label>Catering Style</Label>
-                <p className="text-sm text-sage-600">Choose your preferred dining style for the reception.</p>
-                <Select
-                  value={budgetData.cateringType}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, cateringType: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select catering style" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATERING_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {budgetData.transportationType !== 'None' && (
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="needTransportation"
+                      checked={budgetData.needTransportation}
+                      onCheckedChange={(checked: boolean) => 
+                        setBudgetData(prev => ({ ...prev, needTransportation: checked }))
+                      }
+                    />
+                    <Label htmlFor="needTransportation">Guest transportation needed</Label>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
+        {step === 7 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Stationery</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Bar Service</Label>
-                <p className="text-sm text-sage-600">Choose your preferred bar service option.</p>
+                <Label>Stationery Type</Label>
+                <p className="text-sm text-sage-600">Digital invitations cost $50-200 total. Printed suites average $400-800 for 100 guests.</p>
                 <Select
-                  value={budgetData.barType}
-                  onValueChange={(value) => setBudgetData(prev => ({ ...prev, barType: value }))}
+                  value={budgetData.stationeryType}
+                  onValueChange={(value: typeof STATIONERY_TYPE_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, stationeryType: value }))
+                  }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select bar service" />
+                    <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BAR_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    {STATIONERY_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -695,7 +904,195 @@ const BudgetSurvey = () => {
           </Card>
         )}
 
-        {step === 7 && (
+        {step === 8 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Favors</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Would you like to include wedding favors?</Label>
+                <p className="text-sm text-sage-600">Wedding favors typically cost $3-10 per guest. For {budgetData.guestCount || '100'} guests, this would be ${((parseInt(budgetData.guestCount) || 100) * 3)}-${((parseInt(budgetData.guestCount) || 100) * 10)}.</p>
+                <Select
+                  value={budgetData.includeFavors === true ? "yes" : budgetData.includeFavors === false ? "no" : ""}
+                  onValueChange={(value) => 
+                    setBudgetData(prev => ({ 
+                      ...prev, 
+                      includeFavors: value === "yes" || value === "maybe",
+                      favorCostPerPerson: value === "no" ? "" : prev.favorCostPerPerson
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes, definitely want favors</SelectItem>
+                    <SelectItem value="maybe">Maybe, still deciding</SelectItem>
+                    <SelectItem value="no">No, skipping favors</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {budgetData.includeFavors && (
+                <div className="space-y-2">
+                  <Label>Estimated Cost per Favor</Label>
+                  <Input
+                    type="number"
+                    name="favorCostPerPerson"
+                    placeholder="Enter cost per favor"
+                    value={budgetData.favorCostPerPerson}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 9 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Entertainment</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Ceremony Music</Label>
+                <p className="text-sm text-sage-600">A live string quartet or soloist typically adds $800-2000 to your budget.</p>
+                <Select
+                  value={budgetData.ceremonyMusic}
+                  onValueChange={(value: typeof CEREMONY_MUSIC_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, ceremonyMusic: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CEREMONY_MUSIC_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Reception Entertainment</Label>
+                <p className="text-sm text-sage-600">DJs average $1500-3000, live bands $4000-8000.</p>
+                <Select
+                  value={budgetData.receptionMusic}
+                  onValueChange={(value: typeof RECEPTION_MUSIC_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, receptionMusic: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECEPTION_MUSIC_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Entertainment Hours</Label>
+                <p className="text-sm text-sage-600">Most receptions need 4-6 hours of entertainment.</p>
+                <Input
+                  type="number"
+                  name="musicHours"
+                  placeholder="Enter number of hours"
+                  value={budgetData.musicHours}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 10 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Attire</CardTitle>
+              <CardDescription>
+                Attire is a very personal choice! Rather than predict what you might spend, we've broken down the main elements 
+                of your wedding attire. Please enter what you think you'll spend on each item to help us allocate your budget accurately.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Wedding Dress Budget</Label>
+                <p className="text-sm text-sage-600">Designer dresses typically range $2000-5000+. Alterations typically cost $300-700.</p>
+                <Input
+                  type="text"
+                  name="dressBudget"
+                  placeholder="Enter dress budget"
+                  value={budgetData.dressBudget}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Would you like a separate reception dress?</Label>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="needReceptionDress"
+                    checked={budgetData.needReceptionDress}
+                    onCheckedChange={(checked) => 
+                      setBudgetData(prev => ({ ...prev, needReceptionDress: checked }))
+                    }
+                  />
+                  <Label htmlFor="needReceptionDress">Yes, I want a reception dress</Label>
+                </div>
+              </div>
+
+              {budgetData.needReceptionDress && (
+                <div className="space-y-2">
+                  <Label>Reception Dress Budget</Label>
+                  <p className="text-sm text-sage-600">Reception dresses typically range from $500-2000.</p>
+                  <Input
+                    type="text"
+                    name="receptionDressBudget"
+                    placeholder="Enter reception dress budget"
+                    value={budgetData.receptionDressBudget}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Suit/Tuxedo Budget</Label>
+                <p className="text-sm text-sage-600">Quality suits range $500-1000, designer suits $1000-2000+.</p>
+                <Input
+                  type="text"
+                  name="suitBudget"
+                  placeholder="Enter suit/tuxedo budget"
+                  value={budgetData.suitBudget}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Accessories Budget</Label>
+                <p className="text-sm text-sage-600">Wedding shoes ($100-300), veil ($100-500), jewelry ($200-1000+), and undergarments ($100-300).</p>
+                <Input
+                  type="text"
+                  name="accessoriesBudget"
+                  placeholder="Enter accessories budget"
+                  value={budgetData.accessoriesBudget}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 11 && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Summary</CardTitle>
@@ -705,8 +1102,17 @@ const BudgetSurvey = () => {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Location Details</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
+                  <CardTitle>Location & Basic Details</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(1);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
                     <Pencil className="h-4 w-4 text-sage-600" />
                   </Button>
                 </CardHeader>
@@ -733,7 +1139,11 @@ const BudgetSurvey = () => {
                     </div>
                     <div>
                       <Label className="text-sage-600">Guest Count</Label>
-                      <p className="font-medium">{budgetData.guestCount || 0} guests</p>
+                      <p className="font-medium">{budgetData.guestCount || "0"} guests</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Total Budget</Label>
+                      <p className="font-medium">${formatCurrency(budgetData.totalBudget || "0")}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -742,7 +1152,16 @@ const BudgetSurvey = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Photography & Videography</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setStep(2)}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(2);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
                     <Pencil className="h-4 w-4 text-sage-600" />
                   </Button>
                 </CardHeader>
@@ -763,7 +1182,16 @@ const BudgetSurvey = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Decor & Florals</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setStep(3)}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(3);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
                     <Pencil className="h-4 w-4 text-sage-600" />
                   </Button>
                 </CardHeader>
@@ -774,8 +1202,46 @@ const BudgetSurvey = () => {
                       <p className="font-medium">{budgetData.floralStyle || "Not specified"}</p>
                     </div>
                     <div>
-                      <Label className="text-sage-600">DIY Elements</Label>
-                      <p className="font-medium">{budgetData.diyElements || "Not specified"}</p>
+                      <Label className="text-sage-600">Wedding Party Size</Label>
+                      <p className="font-medium">{budgetData.weddingPartySize || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Ceremony Decor</Label>
+                      <p className="font-medium">{budgetData.ceremonyDecorLevel || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Additional Decor</Label>
+                      <p className="font-medium">{budgetData.additionalDecorAreas || "Not specified"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Catering & Bar</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(4);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 text-sage-600" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sage-600">Catering Style</Label>
+                      <p className="font-medium">{budgetData.cateringStyle || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Bar Service</Label>
+                      <p className="font-medium">{budgetData.barType || "Not specified"}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -784,55 +1250,170 @@ const BudgetSurvey = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Entertainment</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setStep(4)}>
-                    <Pencil className="h-4 w-4 text-sage-600" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-sage-600">Music Choice</Label>
-                    <p className="font-medium">{budgetData.musicChoice || "Not specified"}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Attire & Beauty</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setStep(5)}>
-                    <Pencil className="h-4 w-4 text-sage-600" />
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-sage-600">Hair & Makeup Coverage</Label>
-                    <p className="font-medium">{budgetData.beautyCoverage || "Not specified"}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Logistics & Catering</CardTitle>
-                  <Button variant="ghost" size="sm" onClick={() => setStep(6)}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(9);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
                     <Pencil className="h-4 w-4 text-sage-600" />
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label className="text-sage-600">Wedding Planner</Label>
-                      <p className="font-medium">{budgetData.planningAssistance || "Not specified"}</p>
+                      <Label className="text-sage-600">Ceremony Music</Label>
+                      <p className="font-medium">{budgetData.ceremonyMusic || "Not specified"}</p>
                     </div>
                     <div>
-                      <Label className="text-sage-600">Catering Style</Label>
-                      <p className="font-medium">{budgetData.cateringType || "Not specified"}</p>
+                      <Label className="text-sage-600">Reception Entertainment</Label>
+                      <p className="font-medium">{budgetData.receptionMusic || "Not specified"}</p>
                     </div>
                     <div>
-                      <Label className="text-sage-600">Bar Service</Label>
-                      <p className="font-medium">{budgetData.barType || "Not specified"}</p>
-            </div>
-          </div>
+                      <Label className="text-sage-600">Entertainment Hours</Label>
+                      <p className="font-medium">{budgetData.musicHours || "Not specified"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Beauty Services</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(5);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 text-sage-600" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sage-600">Beauty Services</Label>
+                      <p className="font-medium">{budgetData.beautyStyle || "Not specified"}</p>
+                    </div>
+                    {budgetData.beautyStyle === 'Bride and Party' && (
+                      <div>
+                        <Label className="text-sage-600">Bridesmaid Count</Label>
+                        <p className="font-medium">{budgetData.bridesmaidCount || "Not specified"}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Transportation</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(6);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 text-sage-600" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sage-600">Transportation Type</Label>
+                      <p className="font-medium">{budgetData.transportationType || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Guest Transportation</Label>
+                      <p className="font-medium">{budgetData.needTransportation ? "Yes" : "No"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Stationery & Favors</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(7);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 text-sage-600" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sage-600">Stationery Type</Label>
+                      <p className="font-medium">{budgetData.stationeryType || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Including Favors</Label>
+                      <p className="font-medium">{budgetData.includeFavors ? "Yes" : "No"}</p>
+                    </div>
+                    {budgetData.includeFavors && (
+                      <div>
+                        <Label className="text-sage-600">Cost per Favor</Label>
+                        <p className="font-medium">${budgetData.favorCostPerPerson || "0"}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Attire</CardTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setStep(10);
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('fromSummary', 'true');
+                      window.history.pushState({}, '', url);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 text-sage-600" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sage-600">Dress Budget</Label>
+                      <p className="font-medium">${budgetData.dressBudget || "0"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Suit/Tuxedo Budget</Label>
+                      <p className="font-medium">${budgetData.suitBudget || "0"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Accessories Budget</Label>
+                      <p className="font-medium">${budgetData.accessoriesBudget || "0"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sage-600">Reception Dress</Label>
+                      <p className="font-medium">{budgetData.needReceptionDress ? "Yes" : "No"}</p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </CardContent>
@@ -841,15 +1422,15 @@ const BudgetSurvey = () => {
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-0 pt-8">
           <div className="flex gap-4">
-          <Button
-            variant="outline"
+            <Button
+              variant="outline"
               onClick={handlePreviousStep}
-            disabled={step === 1}
-            className="w-full sm:w-auto bg-sage-50 hover:bg-sage-100 text-[#4A5D4E] border-sage-200"
-          >
-            Back
-          </Button>
-          <Button
+              disabled={step === 0}
+              className="w-full sm:w-auto bg-sage-50 hover:bg-sage-100 text-[#4A5D4E] border-sage-200"
+            >
+              Back
+            </Button>
+            <Button
               variant="outline"
               onClick={loadDemoData}
               className="w-full sm:w-auto bg-sage-50 hover:bg-sage-100 text-[#4A5D4E] border-sage-200"
@@ -867,18 +1448,34 @@ const BudgetSurvey = () => {
                 Start Over
               </Button>
             )}
-            <Button
-              onClick={step === 7 ? calculateBudget : handleNextStep}
-            className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
-          >
-              {step === 7 ? "Calculate Budget" : "Next"}
-          </Button>
+            {step !== 11 && (
+              <Button
+                onClick={handleNextStep}
+                className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
+              >
+                Next
+              </Button>
+            )}
+            {step === 11 && (
+              <Button
+                onClick={calculateBudget}
+                className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
+              >
+                Calculate Budget
+              </Button>
+            )}
+            {step < 11 && searchParams.get('fromSummary') === 'true' && (
+              <Button
+                onClick={() => setStep(11)}
+                className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
+              >
+                Confirm & Return to Summary
+              </Button>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default BudgetSurvey;
+}
 

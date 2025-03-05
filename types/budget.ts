@@ -23,6 +23,46 @@ export type BudgetCategory = {
   }[]
 }
 
+export type BudgetPreferences = {
+  cateringStyle?: string
+  barService?: string
+  photoVideo?: string
+  coverage?: string
+  floralStyle?: string
+  diyElements?: string
+  musicChoice?: string
+  beautyCoverage?: string
+  planningAssistance?: string
+  coverageHours?: string
+  musicHours?: string
+  makeupFor?: string[]
+  makeupServices?: string[]
+  transportationType?: string
+  transportationHours?: string
+}
+
+export type CalculatedBudget = {
+  categories: BudgetCategory[]
+  rationale: {
+    totalBudget: string
+    locationFactor: number
+    seasonalFactor: number
+    notes: string[]
+  }
+  location?: {
+    city: string
+    state?: string
+    country: string
+    isDestination: boolean
+    weddingDate?: string
+  }
+  dayOfWeek?: 'saturday' | 'friday' | 'sunday' | 'weekday'
+  adjustedFactors?: {
+    seasonal: number
+    location: number
+  }
+}
+
 export type BudgetData = {
   totalBudget: number
   budget: number // Alias for totalBudget for backward compatibility
@@ -43,33 +83,8 @@ export type BudgetData = {
     seasonalFactor: number
     notes: string[]
   }
-  calculatedBudget: {
-    categories: BudgetCategory[]
-    rationale: {
-      totalBudget: string
-      locationFactor: number
-      seasonalFactor: number
-      notes: string[]
-    }
-    location?: {
-      city: string
-      state?: string
-      country: string
-      isDestination: boolean
-      weddingDate?: string
-    }
-  }
-  preferences?: {
-    cateringStyle?: string
-    barService?: string
-    photoVideo?: string
-    coverage?: string
-    floralStyle?: string
-    diyElements?: string
-    musicChoice?: string
-    beautyCoverage?: string
-    planningAssistance?: string
-  }
+  calculatedBudget: CalculatedBudget
+  preferences?: BudgetPreferences
 }
 
 export type BudgetPriority = {
@@ -83,26 +98,26 @@ export type LocationData = {
   state?: string
   country: string
   costFactor: number
+  zipCode?: string
 }
 
 export type UserData = {
-  name: string;
-  partnerName?: string;
-  weddingDate: string;
-  budget: number;
-  guestCount: number;
-  calculatedBudget?: any;
-  isDemo?: boolean;
-  preferences?: {
-    cateringStyle?: string;
-    barService?: string;
-    photoVideo?: string;
-    coverage?: string;
-    floralStyle?: string;
-    diyElements?: string;
-    musicChoice?: string;
-    beautyCoverage?: string;
-    planningAssistance?: string;
-  };
+  name: string
+  partnerName?: string
+  weddingDate: string
+  budget: number
+  guestCount: number
+  totalBudget?: number
+  location?: {
+    city: string
+    state?: string
+    country: string
+    isDestination: boolean
+    weddingDate?: string
+  }
+  calculatedBudget?: CalculatedBudget
+  isDemo?: boolean
+  preferences?: BudgetPreferences
+  lastUpdated?: string
 }
 

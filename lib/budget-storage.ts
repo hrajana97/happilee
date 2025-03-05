@@ -152,11 +152,17 @@ type CateringStyle = 'Plated' | 'Buffet' | 'Family Style' | 'Food Stations' | 'H
 type BarService = 'Full Open Bar' | 'Beer & Wine Only' | 'Limited Open Bar' | 'Cash Bar' | 'No Alcohol'
 type PhotoVideo = 'Both Photography & Videography' | 'Photography Only' | 'Videography Only'
 type Coverage = 'Full Day Coverage' | 'Partial Day Coverage' | 'Ceremony & Portraits Only'
-type FloralStyle = 'Elaborate & Luxurious' | 'Modern & Minimalist' | 'Garden Style' | 'Wildflower Style' | 'Simple & Classic'
+type FloralStyle = 'Fresh' | 'Artificial' | 'Mixed'
+type WeddingPartySize = 'Small (1-4 people)' | 'Medium (5-8 people)' | 'Large (9+ people)'
+type CeremonyDecorLevel = 'Minimal' | 'Standard' | 'Elaborate'
+type AdditionalDecorAreas = 'None' | 'Some' | 'Extensive'
 type DiyElements = 'Yes, planning DIY elements' | 'No DIY elements planned' | 'Maybe, still deciding'
 type MusicChoice = 'DJ' | 'Live Band' | 'Both DJ & Band' | 'Other Live Music' | 'Playlist Only'
 type BeautyCoverage = 'Full Wedding Party' | 'Bride Only' | 'Bride & Bridesmaids' | 'None Needed'
 type PlannerType = 'Full Wedding Planner' | 'Month-of Coordinator' | 'Day-of Coordinator' | 'No Professional Help'
+type TransportationType = 'None' | 'Venue to Venue' | 'Hotel to Venue' | 'Both'
+type StationeryType = 'Digital' | 'Print' | 'Both'
+type BeautyStyle = 'DIY' | 'Bride Only' | 'Bride and Party'
 
 interface ServiceMultipliers {
   catering: Record<CateringStyle, number>
@@ -166,8 +172,40 @@ interface ServiceMultipliers {
   florals: Record<FloralStyle, number>
   diy: Record<DiyElements, number>
   music: Record<MusicChoice, number>
-  beauty: Record<BeautyCoverage, number>
+  beauty: Record<BeautyStyle, number>
   planner: Record<PlannerType, number>
+  transportation: Record<TransportationType, number>
+  stationery: Record<StationeryType, number>
+}
+
+interface FloralMultipliers {
+  style: Record<FloralStyle, number>
+  partySize: Record<WeddingPartySize, number>
+  ceremonyDecor: Record<CeremonyDecorLevel, number>
+  additionalDecor: Record<AdditionalDecorAreas, number>
+}
+
+const floralMultipliers: FloralMultipliers = {
+  style: {
+    'Fresh': 1.0,
+    'Artificial': 0.7,
+    'Mixed': 0.85
+  },
+  partySize: {
+    'Small (1-4 people)': 0.8,
+    'Medium (5-8 people)': 1.0,
+    'Large (9+ people)': 1.3
+  },
+  ceremonyDecor: {
+    'Minimal': 0.7,
+    'Standard': 1.0,
+    'Elaborate': 1.4
+  },
+  additionalDecor: {
+    'None': 0.8,
+    'Some': 1.0,
+    'Extensive': 1.3
+  }
 }
 
 const serviceMultipliers: ServiceMultipliers = {
@@ -196,11 +234,9 @@ const serviceMultipliers: ServiceMultipliers = {
     'Ceremony & Portraits Only': 0.7
   },
   florals: {
-    'Elaborate & Luxurious': 1.5,
-    'Modern & Minimalist': 0.9,
-    'Garden Style': 1.2,
-    'Wildflower Style': 1.0,
-    'Simple & Classic': 0.8
+    'Fresh': 1.0,
+    'Artificial': 0.7,
+    'Mixed': 0.85
   },
   diy: {
     'Yes, planning DIY elements': 0.7,
@@ -215,34 +251,45 @@ const serviceMultipliers: ServiceMultipliers = {
     'Playlist Only': 0.2
   },
   beauty: {
-    'Full Wedding Party': 1.5,
+    'DIY': 0.2,
     'Bride Only': 1.0,
-    'Bride & Bridesmaids': 1.3,
-    'None Needed': 0
+    'Bride and Party': 1.5
   },
   planner: {
     'Full Wedding Planner': 1.5,
     'Month-of Coordinator': 1.0,
     'Day-of Coordinator': 0.8,
     'No Professional Help': 0
+  },
+  transportation: {
+    'None': 0,
+    'Venue to Venue': 1.0,
+    'Hotel to Venue': 1.2,
+    'Both': 1.5
+  },
+  stationery: {
+    'Digital': 0.2,
+    'Print': 1.0,
+    'Both': 1.2
   }
 }
 
 // Define which percentage of each category scales with guest count
 const guestCountScaling: Record<CategoryType, {
-  fixed: number,  // Percentage that doesn't scale with guests
-  variable: number, // Percentage that scales with guests
-  staffing: number // Percentage that scales with staff needs
+  fixed: number,
+  variable: number,
+  staffing: number
 }> = {
-  venue: { fixed: 0.7, variable: 0.2, staffing: 0.1 }, // Most venue cost is fixed rental
-  catering: { fixed: 0.1, variable: 0.8, staffing: 0.1 }, // Mostly per-person
-  photography: { fixed: 0.8, variable: 0.1, staffing: 0.1 }, // Mostly fixed package
-  attire: { fixed: 1.0, variable: 0, staffing: 0 }, // Doesn't scale with guests
-  flowers: { fixed: 0.4, variable: 0.6, staffing: 0 }, // Mix of fixed and per-table
-  entertainment: { fixed: 0.8, variable: 0, staffing: 0.2 }, // Mostly fixed
-  stationery: { fixed: 0.2, variable: 0.8, staffing: 0 }, // Scales with guest count
-  favors: { fixed: 0.1, variable: 0.9, staffing: 0 }, // Almost entirely per-guest
-  transportation: { fixed: 0.6, variable: 0.3, staffing: 0.1 } // Mix of fixed and variable
+  venue: { fixed: 0.7, variable: 0.2, staffing: 0.1 },
+  catering: { fixed: 0.1, variable: 0.8, staffing: 0.1 },
+  photography: { fixed: 0.8, variable: 0.1, staffing: 0.1 },
+  attire: { fixed: 1.0, variable: 0, staffing: 0 },
+  flowers: { fixed: 0.3, variable: 0.6, staffing: 0.1 },
+  entertainment: { fixed: 0.8, variable: 0, staffing: 0.2 },
+  stationery: { fixed: 0.2, variable: 0.8, staffing: 0 },
+  favors: { fixed: 0.1, variable: 0.9, staffing: 0 },
+  transportation: { fixed: 0.6, variable: 0.3, staffing: 0.1 },
+  hair_makeup: { fixed: 0.2, variable: 0.7, staffing: 0.1 }
 }
 
 // Calculate staffing needs based on guest count
@@ -326,6 +373,7 @@ export interface LocationData {
   isDestination?: boolean
   weddingDate?: string
   budget?: number  // Add budget property
+  zipCode?: string
 }
 
 // Calculate seasonal factor based on wedding date
@@ -356,7 +404,7 @@ const isCoverage = (value: string): value is Coverage => {
 }
 
 const isFloralStyle = (value: string): value is FloralStyle =>
-  Object.keys(serviceMultipliers.florals).includes(value)
+  ['Fresh', 'Artificial', 'Mixed'].includes(value)
 
 const isDiyElements = (value: string): value is DiyElements =>
   Object.keys(serviceMultipliers.diy).includes(value)
@@ -489,23 +537,66 @@ const categoryDescriptions: Record<CategoryType, {
   }
 }
 
+// Add type guards before calculateFloralMultiplier
+const isWeddingPartySize = (value: string): value is WeddingPartySize =>
+  ['Small (1-4 people)', 'Medium (5-8 people)', 'Large (9+ people)'].includes(value)
+
+const isCeremonyDecorLevel = (value: string): value is CeremonyDecorLevel =>
+  ['Minimal', 'Standard', 'Elaborate'].includes(value)
+
+const isAdditionalDecorAreas = (value: string): value is AdditionalDecorAreas =>
+  ['None', 'Some', 'Extensive'].includes(value)
+
+// Update the preferences interface to handle both string and specific types
+interface BudgetPreferences {
+  cateringStyle?: string
+  barService?: string
+  photoVideo?: string
+  coverage?: string
+  floralStyle?: string | FloralStyle
+  weddingPartySize?: string | WeddingPartySize
+  ceremonyDecorLevel?: string | CeremonyDecorLevel
+  additionalDecorAreas?: string | AdditionalDecorAreas
+  diyElements?: string
+  musicChoice?: string
+  transportationType?: string | TransportationType
+  stationeryType?: string | StationeryType
+  beautyStyle?: string | BeautyStyle
+  bridesmaidCount?: string
+  includeFavors?: boolean
+  favorCostPerPerson?: string
+}
+
+// Calculate the combined floral multiplier
+const calculateFloralMultiplier = (
+  style: FloralStyle,
+  partySize: WeddingPartySize,
+  ceremonyDecor: CeremonyDecorLevel,
+  additionalDecor: AdditionalDecorAreas
+): number => {
+  const styleMultiplier = floralMultipliers.style[style]
+  const partySizeMultiplier = floralMultipliers.partySize[partySize]
+  const ceremonyMultiplier = floralMultipliers.ceremonyDecor[ceremonyDecor]
+  const additionalMultiplier = floralMultipliers.additionalDecor[additionalDecor]
+
+  // Weight the components based on their typical proportion of the total floral budget
+  const weightedMultiplier = 
+    (styleMultiplier * 0.3) +           // Style affects all flowers
+    (partySizeMultiplier * 0.2) +       // Personal flowers (bouquets, boutonnieres)
+    (ceremonyMultiplier * 0.3) +        // Ceremony decor
+    (additionalMultiplier * 0.2)        // Additional decor areas
+
+  // Cap the maximum multiplier at 2.0 to prevent extreme variations
+  return Math.min(weightedMultiplier, 2.0)
+}
+
 // Calculate budget ranges based on all factors
 const calculateBudgetRanges = (
   guestCount: number,
   locationFactor: number,
   seasonalFactor: number,
   totalBudget: number,
-  preferences: {
-    cateringStyle?: string
-    barService?: string
-    photoVideo?: string
-    coverage?: string
-    floralStyle?: string
-    diyElements?: string
-    musicChoice?: string
-    beautyCoverage?: string
-    planningAssistance?: string
-  }
+  preferences: BudgetPreferences
 ): {
   min: number
   typical: number
@@ -551,18 +642,106 @@ const calculateBudgetRanges = (
           1.8 // Hard cap on photography multiplier
         )
       : 1.0,
-    flowers: preferences.floralStyle && isFloralStyle(preferences.floralStyle)
-      ? (serviceMultipliers.florals[preferences.floralStyle] * 0.8 + 0.2) // Weighted to prevent extreme variations
-      : 1.0,
+    flowers: (() => {
+      if (!preferences.floralStyle) return 1.0;
+
+      // Validate all floral-related inputs
+      if (!isFloralStyle(preferences.floralStyle)) return 1.0;
+      
+      const partySize = preferences.weddingPartySize && isWeddingPartySize(preferences.weddingPartySize) 
+        ? preferences.weddingPartySize 
+        : 'Medium (5-8 people)';
+        
+      const ceremonyDecor = preferences.ceremonyDecorLevel && isCeremonyDecorLevel(preferences.ceremonyDecorLevel)
+        ? preferences.ceremonyDecorLevel
+        : 'Standard';
+        
+      const additionalDecor = preferences.additionalDecorAreas && isAdditionalDecorAreas(preferences.additionalDecorAreas)
+        ? preferences.additionalDecorAreas
+        : 'Some';
+
+      // Calculate the combined floral multiplier using all available preferences
+      const combinedMultiplier = calculateFloralMultiplier(
+        preferences.floralStyle,
+        partySize,
+        ceremonyDecor,
+        additionalDecor
+      );
+
+      // Add explanatory notes for significant adjustments
+      if (combinedMultiplier > 1.2) {
+        adjustments.push(`Increased floral budget due to ${ceremonyDecor.toLowerCase()} ceremony decor and ${additionalDecor.toLowerCase()} additional decor areas`);
+      } else if (combinedMultiplier < 0.8) {
+        adjustments.push(`Reduced floral budget based on ${preferences.floralStyle.toLowerCase()} flowers and minimal decor selections`);
+      }
+
+      return combinedMultiplier;
+    })(),
     entertainment: preferences.musicChoice && isMusicChoice(preferences.musicChoice)
       ? Math.min(serviceMultipliers.music[preferences.musicChoice], 1.8) // Cap entertainment increase
       : 1.0,
     attire: 1.0, // Attire costs don't scale with other factors
     stationery: 1.0,
-    favors: 1.0,
-    transportation: 1.0,
-    hair_makeup: 1.0
+    favors: (() => {
+      if (!preferences.includeFavors) {
+        adjustments.push('No budget allocated for favors as per preference');
+        return 0;
+      }
+      
+      if (!preferences.favorCostPerPerson) return 1.0;
+      
+      const costPerPerson = parseFloat(preferences.favorCostPerPerson);
+      if (isNaN(costPerPerson)) return 1.0;
+      
+      // Base the multiplier on the per-person cost relative to a typical $5 favor
+      const baseMultiplier = costPerPerson / 5;
+      const finalMultiplier = Math.min(Math.max(baseMultiplier, 0.2), 2.0); // Cap between 0.2x and 2.0x
+      
+      adjustments.push(`Adjusted favors budget for ${guestCount} guests at $${costPerPerson.toFixed(2)} per person`);
+      
+      return finalMultiplier;
+    })(),
+    transportation: (() => {
+      if (!preferences.transportationType || !isTransportationType(preferences.transportationType)) return 0;
+      
+      const baseMultiplier = serviceMultipliers.transportation[preferences.transportationType];
+      const guestCountFactor = Math.ceil(guestCount / 50) * 0.1; // Additional 10% per 50 guests
+      
+      const finalMultiplier = Math.min(baseMultiplier * (1 + guestCountFactor), 2.0);
+      
+      if (finalMultiplier > 1.2) {
+        adjustments.push(`Increased transportation budget due to ${preferences.transportationType.toLowerCase()} needs and guest count of ${guestCount}`);
+      }
+      
+      return finalMultiplier;
+    })(),
+    hair_makeup: (() => {
+      if (!preferences.beautyStyle || !isBeautyStyle(preferences.beautyStyle)) return 1.0;
+      
+      const baseMultiplier = serviceMultipliers.beauty[preferences.beautyStyle];
+      let partySize = 1; // Default to bride only
+      
+      if (preferences.beautyStyle === 'Bride and Party' && preferences.bridesmaidCount) {
+        partySize = parseInt(preferences.bridesmaidCount) + 1; // Add 1 for the bride
+      }
+      
+      const partySizeFactor = Math.max(0.2, Math.min(0.5, (partySize - 1) * 0.1)); // 10% per additional person, min 20%, max 50%
+      const finalMultiplier = Math.min(baseMultiplier * (1 + partySizeFactor), 2.0);
+      
+      if (preferences.beautyStyle === 'Bride and Party') {
+        adjustments.push(`Adjusted beauty services budget for ${partySize} people`);
+      }
+      
+      return finalMultiplier;
+    })(),
   }
+
+  // Apply the calculated multipliers to each category
+  Object.entries(serviceMultipliersEffect).forEach(([category, multiplier]) => {
+    if (category in categoryMultipliers) {
+      categoryMultipliers[category as CategoryType] = multiplier
+    }
+  })
 
   // First pass: Calculate initial multipliers for each category using weighted combinations
   const MAX_CATEGORY_MULTIPLIER = 2.0 // More conservative cap
@@ -644,6 +823,49 @@ const calculateBudgetRanges = (
   }
 }
 
+// Mock ZIP code data - in production this would come from an API
+const zipCodeData: Record<string, { city: string; state: string; costFactor: number }> = {
+  // San Francisco area
+  '94102': { city: 'San Francisco', state: 'CA', costFactor: 2.1 },
+  '94103': { city: 'San Francisco', state: 'CA', costFactor: 2.0 },
+  '94110': { city: 'San Francisco', state: 'CA', costFactor: 1.9 },
+  // New York area
+  '10001': { city: 'New York', state: 'NY', costFactor: 2.1 },
+  '10002': { city: 'New York', state: 'NY', costFactor: 2.0 },
+  '11201': { city: 'Brooklyn', state: 'NY', costFactor: 1.8 },
+  // Los Angeles area
+  '90001': { city: 'Los Angeles', state: 'CA', costFactor: 1.8 },
+  '90210': { city: 'Beverly Hills', state: 'CA', costFactor: 2.1 },
+  '90401': { city: 'Santa Monica', state: 'CA', costFactor: 1.9 }
+};
+
+// Function to get cost factor from ZIP code with city fallback
+const getLocationCostFactor = (location: LocationData): number => {
+  // If ZIP code is provided and valid, use it
+  if (location.zipCode && zipCodeData[location.zipCode]) {
+    return zipCodeData[location.zipCode].costFactor;
+  }
+
+  // Fallback to city-based lookup
+  const normalizedCity = normalizeCity(location.city);
+  const locationKey = location.state 
+    ? `${normalizedCity}, ${location.state}`
+    : normalizedCity;
+  
+  // Try exact match first, then partial matches
+  let locationFactor = locationCostFactors[locationKey];
+  if (!locationFactor) {
+    const cityMatch = Object.keys(locationCostFactors).find(key => 
+      key.toLowerCase().includes(normalizedCity.toLowerCase())
+    );
+    locationFactor = cityMatch 
+      ? locationCostFactors[cityMatch]
+      : locationCostFactors['Default US'];
+  }
+
+  return locationFactor;
+};
+
 const budgetStorage = {
   setBudgetData: (data: BudgetData) => {
     if (!isBrowser) {
@@ -723,6 +945,10 @@ const budgetStorage = {
       musicChoice?: string
       beautyCoverage?: string
       planningAssistance?: string
+      transportationType?: string
+      stationeryType?: string
+      beautyStyle?: string
+      bridesmaidCount?: string
     }
   ): {
     categories: BudgetCategory[]
@@ -743,29 +969,13 @@ const budgetStorage = {
         throw new BudgetError('Invalid location', 'INVALID_LOCATION')
       }
 
-      // Normalize the city name
-      const normalizedCity = normalizeCity(location.city)
-
-      // Get location cost factor with more granular location matching
-      const locationKey = location.state 
-        ? `${normalizedCity}, ${location.state}`
-        : normalizedCity
-      
-      // Try exact match first, then try partial matches
-      let locationFactor = locationCostFactors[locationKey]
-      if (!locationFactor) {
-        const cityMatch = Object.keys(locationCostFactors).find(key => 
-          key.toLowerCase().includes(normalizedCity.toLowerCase())
-        )
-        locationFactor = cityMatch 
-          ? locationCostFactors[cityMatch]
-          : locationCostFactors['Default US']
-      }
+      // Use the new location cost factor function
+      const locationFactor = getLocationCostFactor(location);
 
       // Calculate seasonal factor based on wedding date if available
       const seasonalFactor = location.weddingDate 
         ? calculateSeasonalFactor(new Date(location.weddingDate))
-        : 1.0
+        : 1.0;
 
       // Calculate budget ranges with all factors
       const budgetRanges = calculateBudgetRanges(
@@ -834,6 +1044,16 @@ const formatCurrency = (amount: number): string => {
     maximumFractionDigits: 0
   }).format(amount)
 }
+
+// Add type guards for new types
+const isTransportationType = (value: string): value is TransportationType =>
+  ['None', 'Venue to Venue', 'Hotel to Venue', 'Both'].includes(value)
+
+const isStationeryType = (value: string): value is StationeryType =>
+  ['Digital', 'Print', 'Both'].includes(value)
+
+const isBeautyStyle = (value: string): value is BeautyStyle =>
+  ['DIY', 'Bride Only', 'Bride and Party'].includes(value)
 
 export default budgetStorage
 

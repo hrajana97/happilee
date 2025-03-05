@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { storage } from "@/lib/storage";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronDown, ChevronUp, FileSpreadsheet, Download, Calendar, Users, MapPin, Plus, MoreVertical, LayoutGrid } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, FileSpreadsheet, Download, Calendar, Users, MapPin, Plus, MoreVertical, LayoutGrid, X, AlertTriangle, Pencil } from "lucide-react";
 import Link from "next/link";
 import type { BudgetCategory, BudgetData, UserData, BudgetPreferences, CalculatedBudget } from "@/types/budget";
 import {
@@ -28,7 +28,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider"
-import { AlertTriangle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Tooltip,
@@ -95,7 +94,15 @@ export default function BudgetBreakdownPage() {
       state: "",
       country: "United States",
       isDestination: false,
-      weddingDate: new Date().toISOString()
+      weddingDate: new Date().toISOString().split('T')[0]
+    },
+    priorities: [],
+    categories: [],
+    rationale: {
+      totalBudget: "0",
+      locationFactor: 1,
+      seasonalFactor: 1,
+      notes: []
     },
     calculatedBudget: {
       categories: [],
@@ -108,8 +115,14 @@ export default function BudgetBreakdownPage() {
       dayOfWeek: "saturday",
       adjustedFactors: {
         seasonal: 1,
-        location: 1,
-        service: 1
+        location: 1
+      },
+      location: {
+        city: "",
+        state: "",
+        country: "United States",
+        isDestination: false,
+        weddingDate: new Date().toISOString().split('T')[0]
       }
     },
     preferences: {},
@@ -151,18 +164,26 @@ export default function BudgetBreakdownPage() {
           budget: userData.budget || 0,
           totalBudget: userData.totalBudget || userData.budget || 0,
           guestCount: userData.guestCount || 0,
-          location: {
-            city: userData.location?.city || "",
-            state: userData.location?.state || "",
-            country: userData.location?.country || "United States",
-            isDestination: userData.location?.isDestination || false,
-            weddingDate: userData.location?.weddingDate || userData.weddingDate
+          location: userData.calculatedBudget?.location || userData.location || {
+            city: "",
+            state: "",
+            country: "United States",
+            isDestination: false,
+            weddingDate: new Date().toISOString().split('T')[0]
+          },
+          priorities: [],
+          categories: [],
+          rationale: {
+            totalBudget: userData.calculatedBudget?.rationale?.totalBudget || "0",
+            locationFactor: userData.calculatedBudget?.rationale?.locationFactor || 1,
+            seasonalFactor: userData.calculatedBudget?.rationale?.seasonalFactor || 1,
+            notes: userData.calculatedBudget?.rationale?.notes || []
           },
           preferences: userData.preferences || {},
           calculatedBudget: {
             categories: userData.calculatedBudget?.categories || [],
             rationale: {
-              totalBudget: userData.budget?.toString() || "0",
+              totalBudget: userData.calculatedBudget?.rationale?.totalBudget || "0",
               locationFactor: userData.calculatedBudget?.rationale?.locationFactor || 1,
               seasonalFactor: userData.calculatedBudget?.rationale?.seasonalFactor || 1,
               notes: userData.calculatedBudget?.rationale?.notes || []
@@ -170,8 +191,14 @@ export default function BudgetBreakdownPage() {
             dayOfWeek: userData.calculatedBudget?.dayOfWeek || "saturday",
             adjustedFactors: {
               seasonal: userData.calculatedBudget?.adjustedFactors?.seasonal || 1,
-              location: userData.calculatedBudget?.adjustedFactors?.location || 1,
-              service: userData.calculatedBudget?.adjustedFactors?.service || 1
+              location: userData.calculatedBudget?.adjustedFactors?.location || 1
+            },
+            location: userData.calculatedBudget?.location || userData.location || {
+              city: "",
+              state: "",
+              country: "United States",
+              isDestination: false,
+              weddingDate: userData.weddingDate
             }
           },
           lastUpdated: userData.lastUpdated || new Date().toISOString()
@@ -354,6 +381,16 @@ export default function BudgetBreakdownPage() {
         country: editedPreferences.country,
         isDestination: editedPreferences.isDestination,
         weddingDate: editedPreferences.weddingDate
+      },
+      calculatedBudget: {
+        ...prev.calculatedBudget,
+        location: {
+          city: editedPreferences.city,
+          state: editedPreferences.state,
+          country: editedPreferences.country,
+          isDestination: editedPreferences.isDestination,
+          weddingDate: editedPreferences.weddingDate
+        }
       },
       lastUpdated: new Date().toISOString()
     }));
@@ -604,7 +641,7 @@ export default function BudgetBreakdownPage() {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="outline" size="sm" className="ml-2">
-            Quick Tips
+            💡 Quick Tips
           </Button>
         </TooltipTrigger>
         <TooltipContent className="w-80">
@@ -752,6 +789,11 @@ export default function BudgetBreakdownPage() {
     });
   };
 
+  const formatCategoryName = (name: string) => {
+    if (name === "Hair_makeup") return "Hair and Make-up";
+    return name;
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -786,13 +828,13 @@ export default function BudgetBreakdownPage() {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-sage-100/80 via-[#E8F3E9] to-white p-4 sm:p-8">
-      {/* Add the delete confirmation dialog */}
+      {/* Update the delete confirmation dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader className="space-y-3">
-            <DialogTitle className="text-xl text-sage-900">Delete Category?</DialogTitle>
+            <DialogTitle className="text-xl text-sage-900">Delete {categoryToDelete?.name}?</DialogTitle>
             <DialogDescription className="text-sage-600">
-              Are you sure you want to delete the "{categoryToDelete?.name}" category? This action cannot be undone and will remove all associated budget data.
+              Are you sure you want to delete this category? This will permanently remove it from your budget breakdown. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 pt-4">
@@ -1053,7 +1095,7 @@ export default function BudgetBreakdownPage() {
 
                 {/* Location Card */}
                 <div 
-                  className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm cursor-pointer"
+                  className="bg-gradient-to-br from-sage-50 to-white rounded-lg p-4 border border-sage-200/50 shadow-sm cursor-pointer hover:border-sage-300 hover:shadow-md transition-all group relative"
                   onClick={() => !isEditingPreferences && setIsEditingPreferences(true)}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -1061,6 +1103,17 @@ export default function BudgetBreakdownPage() {
                       <MapPin className="h-4 w-4 text-sage-600" />
                       <p className="text-sm text-sage-600 font-normal">Location</p>
                     </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditingPreferences(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4 text-sage-600" />
+                    </Button>
                   </div>
                   {isEditingPreferences ? (
                     <div className="space-y-2">
@@ -1204,7 +1257,22 @@ export default function BudgetBreakdownPage() {
                             
                             return (
                               <TableRow key={category.id}>
-                                <TableCell>{category.name}</TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="link"
+                                    className="p-0 h-auto font-normal hover:text-sage-700"
+                                    onClick={() => {
+                                      toggleCategory(category.id);
+                                      setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
+                                      const element = document.getElementById(`category-details-${category.id}`);
+                                      if (element) {
+                                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                      }
+                                    }}
+                                  >
+                                    {formatCategoryName(category.name)}
+                                  </Button>
+                                </TableCell>
                                 <TableCell>
                                   <Input
                                     type="number"
@@ -1280,22 +1348,13 @@ export default function BudgetBreakdownPage() {
                                     <DropdownMenuContent align="end">
                                       <DropdownMenuItem onClick={() => {
                                         toggleCategory(category.id);
-                                        setViewMode('card');
                                         setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
-                                        setTimeout(() => {
-                                          const element = document.getElementById(`category-details-${category.id}`);
-                                          if (element) {
-                                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                          }
-                                        }, 100);
+                                        const element = document.getElementById(`category-details-${category.id}`);
+                                        if (element) {
+                                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
                                       }}>
                                         View Details
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem 
-                                        className="text-red-600"
-                                        onClick={() => handleDeleteCategory(category)}
-                                      >
-                                        Delete Category
                                       </DropdownMenuItem>
                                     </DropdownMenuContent>
                                   </DropdownMenu>
@@ -1351,7 +1410,22 @@ export default function BudgetBreakdownPage() {
                             key={category.id}
                             className="hover:bg-sage-50/30 transition-colors"
                           >
-                            <TableCell>{category.name}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="link"
+                                className="p-0 h-auto font-normal hover:text-sage-700"
+                                onClick={() => {
+                                  toggleCategory(category.id);
+                                  setExpandedCategories(prev => ({ ...prev, [category.id]: true }));
+                                  const element = document.getElementById(`category-details-${category.id}`);
+                                  if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }}
+                              >
+                                {formatCategoryName(category.name)}
+                              </Button>
+                            </TableCell>
                             <TableCell 
                               className="cursor-pointer"
                               onClick={() => {
@@ -1409,30 +1483,6 @@ export default function BudgetBreakdownPage() {
                                   }}>
                                     View Details
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    className="text-red-600"
-                                    onClick={() => {
-                                      const updatedCategories = budgetData.calculatedBudget.categories.filter(
-                                        c => c.id !== category.id
-                                      );
-                                      const updatedBudgetData = {
-                                        ...budgetData,
-                                        calculatedBudget: {
-                                          ...budgetData.calculatedBudget,
-                                          categories: updatedCategories
-                                        },
-                                        lastUpdated: new Date().toISOString()
-                                      };
-                                      budgetStorage.setBudgetData(updatedBudgetData);
-                                      setBudgetData(updatedBudgetData);
-                                      toast({
-                                        title: "Category Removed",
-                                        description: `${category.name} has been removed from your budget.`
-                                      });
-                                    }}
-                                  >
-                                    Remove Category
-                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
@@ -1460,34 +1510,47 @@ export default function BudgetBreakdownPage() {
                 const hasOverage = category.actualCost > category.estimatedCost;
                 
                 return (
-                  <Card key={category.id} className="relative">
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                      <div className="space-y-1 flex-1">
-                        <CardTitle className="flex items-center gap-2">
-                          {category.name === "Hair_makeup" ? "Hair and Make-up" : category.name}
-                          {hasOverage && (
-                            <div className="inline-flex items-center">
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                  <Card 
+                    key={category.id} 
+                    className="relative cursor-pointer" 
+                    id={`category-details-${category.id}`}
+                  >
+                    <section onClick={() => toggleCategory(category.id)}>
+                      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 z-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCategory(category);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <div className="space-y-1">
+                            <CardTitle className="flex items-center gap-2">
+                              {formatCategoryName(category.name)}
+                              {hasOverage && (
+                                <div className="inline-flex items-center">
+                                  <AlertTriangle className="h-4 w-4 text-red-500" />
+                                </div>
+                              )}
+                            </CardTitle>
+                            <div className="text-sm text-sage-600">
+                              {formatCurrency(category.estimatedCost)} allocated
                             </div>
-                          )}
-                        </CardTitle>
-                        <div className="text-sm text-sage-600">
-                          {formatCurrency(category.estimatedCost)} allocated
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleDeleteCategory(category)}
-                        >
-                          Delete Category
-                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => toggleCategory(category.id)}
+                          className="z-10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleCategory(category.id);
+                          }}
                         >
                           {isExpanded ? (
                             <ChevronUp className="h-4 w-4" />
@@ -1495,183 +1558,173 @@ export default function BudgetBreakdownPage() {
                             <ChevronDown className="h-4 w-4" />
                           )}
                         </Button>
-                      </div>
-                    </CardHeader>
+                      </CardHeader>
 
-                    <CardContent>
-                      {hasOverage && (
-                        <Alert variant="destructive" className="mb-4">
-                          <AlertTriangle className="h-4 w-4" />
-                          <AlertTitle>Budget Overage</AlertTitle>
-                          <AlertDescription>
-                            You're over budget by {formatCurrency(category.actualCost - category.estimatedCost)}
-                          </AlertDescription>
-                        </Alert>
-                      )}
+                      <CardContent>
+                        {hasOverage && (
+                          <Alert variant="destructive" className="mb-4">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Budget Overage</AlertTitle>
+                            <AlertDescription>
+                              You're over budget by {formatCurrency(category.actualCost - category.estimatedCost)}
+                            </AlertDescription>
+                          </Alert>
+                        )}
 
-                      <div className="space-y-4">
-                        {/* Expanded Content */}
-                        {isExpanded && (
-                          <div className="space-y-4 pt-4">
-                            {/* Combined Cost Breakdown & Tips */}
-                            <div className="bg-sage-50 rounded-lg p-4 space-y-3">
-                              <h4 className="font-medium text-sage-900">Cost Breakdown & Tips</h4>
-                              
-                              <div className="space-y-2 text-sm text-sage-700">
-                                {/* Catering Details */}
-                                {category.name === "Catering" && (
-                                  <>
-                                    <p>• Cost Structure: 80% variable with guest count (food, service), 20% fixed costs (setup, equipment)</p>
-                                    {budgetData.preferences?.cateringStyle && (
-                                      <p>• Your Choice: {budgetData.preferences.cateringStyle} service (
-                                        {budgetData.preferences.cateringStyle === "Plated" ? "30% more than buffet" :
-                                         budgetData.preferences.cateringStyle === "Family Style" ? "20% more than buffet" : "standard buffet pricing"}
-                                        )</p>
-                                    )}
-                                    {budgetData.preferences?.barService && (
-                                      <p>• Bar Service: {budgetData.preferences.barService} (
-                                        {budgetData.preferences.barService === "Full Open Bar" ? "30% more than beer & wine" :
-                                         budgetData.preferences.barService === "Limited Open Bar" ? "15% more than beer & wine" : "standard beer & wine pricing"}
-                                        )</p>
-                                    )}
-                                  </>
-                                )}
+                        <div className="space-y-4">
+                          {/* Expanded Content */}
+                          {isExpanded && (
+                            <div className="space-y-4 pt-4" onClick={(e) => e.stopPropagation()}>
+                              {/* Combined Cost Breakdown & Tips */}
+                              <div className="bg-sage-50 rounded-lg p-4 space-y-3">
+                                <h4 className="font-medium text-sage-900">Cost Breakdown & Tips</h4>
                                 
-                                {/* Venue Details */}
-                                {category.name === "Venue" && (
-                                  <>
-                                    <p>• Cost Structure: 70% fixed venue fee, 30% variable costs (setup, staffing, utilities)</p>
-                                    <p>• Location: {budgetData.location.city}{budgetData.location.state ? `, ${budgetData.location.state}` : ''}</p>
-                                    <p>• Location Impact: {budgetData.calculatedBudget.rationale.locationFactor > 1 ? 
-                                      `${Math.round((budgetData.calculatedBudget.rationale.locationFactor - 1) * 100)}% premium for your area` : 
-                                      'Standard pricing for your area'}</p>
-                                    <p>• Day of Week: {budgetData.calculatedBudget.dayOfWeek === 'saturday' ? 'Saturday (peak pricing)' :
-                                      budgetData.calculatedBudget.dayOfWeek === 'friday' ? 'Friday (10-15% savings)' :
-                                      budgetData.calculatedBudget.dayOfWeek === 'sunday' ? 'Sunday (15-20% savings)' : 'Weekday (20-30% savings)'}</p>
-                                  </>
-                                )}
-                                
-                                {/* Photography Details */}
-                                {category.name === "Photography" && (
-                                  <>
-                                    <p>• Cost Structure: 80% fixed (photographer's time), 20% variable (prints, albums, additional coverage)</p>
-                                    {budgetData.preferences?.photoVideo && (
-                                      <p>• Your Choice: {budgetData.preferences.photoVideo} (
-                                        {budgetData.preferences.photoVideo === "Both Photography & Videography" ? "50% more than photo only" :
-                                         budgetData.preferences.photoVideo === "Photography + Highlight Video" ? "30% more than photo only" : "standard photo package"}
+                                <div className="space-y-2 text-sm text-sage-700">
+                                  {/* Catering Details */}
+                                  {category.name === "Catering" && (
+                                    <>
+                                      <p>• Cost Structure: 80% variable with guest count (food, service), 20% fixed costs (setup, equipment)</p>
+                                      {budgetData.preferences?.cateringStyle && (
+                                        <p>• Your Choice: {budgetData.preferences.cateringStyle} service (
+                                          {budgetData.preferences.cateringStyle === "Plated" ? "30% more than buffet" :
+                                           budgetData.preferences.cateringStyle === "Family Style" ? "20% more than buffet" : "standard buffet pricing"}
+                                          )</p>
+                                      )}
+                                      {budgetData.preferences?.barService && (
+                                        <p>• Bar Service: {budgetData.preferences.barService} (
+                                          {budgetData.preferences.barService === "Full Open Bar" ? "30% more than beer & wine" :
+                                           budgetData.preferences.barService === "Limited Open Bar" ? "15% more than beer & wine" : "standard beer & wine pricing"}
+                                          )</p>
+                                      )}
+                                    </>
+                                  )}
+                                  
+                                  {/* Venue Details */}
+                                  {category.name === "Venue" && (
+                                    <>
+                                      <p>• Cost Structure: 70% fixed venue fee, 30% variable costs (setup, staffing, utilities)</p>
+                                      <p>• Location: {budgetData.location.city}{budgetData.location.state ? `, ${budgetData.location.state}` : ''}</p>
+                                      <p>• Location Impact: {budgetData.calculatedBudget.rationale.locationFactor > 1 ? 
+                                        `${Math.round((budgetData.calculatedBudget.rationale.locationFactor - 1) * 100)}% premium for your area` : 
+                                        'Standard pricing for your area'}</p>
+                                      <p>• Day of Week: {budgetData.calculatedBudget.dayOfWeek === 'saturday' ? 'Saturday (peak pricing)' :
+                                        budgetData.calculatedBudget.dayOfWeek === 'friday' ? 'Friday (10-15% savings)' :
+                                        budgetData.calculatedBudget.dayOfWeek === 'sunday' ? 'Sunday (15-20% savings)' : 'Weekday (20-30% savings)'}</p>
+                                    </>
+                                  )}
+                                  
+                                  {/* Photography Details */}
+                                  {category.name === "Photography" && (
+                                    <>
+                                      <p>• Cost Structure: 80% fixed (photographer's time), 20% variable (prints, albums, additional coverage)</p>
+                                      {budgetData.preferences?.photoVideo && (
+                                        <p>• Your Choice: {budgetData.preferences.photoVideo} (
+                                          {budgetData.preferences.photoVideo === "Both Photography & Videography" ? "50% more than photo only" :
+                                           budgetData.preferences.photoVideo === "Photography + Highlight Video" ? "30% more than photo only" : "standard photo package"}
+                                          )</p>
+                                      )}
+                                      <p>• Coverage Hours: {budgetData.preferences?.coverageHours || "8"} hours</p>
+                                    </>
+                                  )}
+
+                                  {/* Entertainment Details */}
+                                  {category.name === "Entertainment" && (
+                                    <>
+                                      <p>• Cost Structure: 80% fixed base rate, 20% additional equipment/staff</p>
+                                      {budgetData.preferences?.musicChoice ? (
+                                        <p>• Your Choice: {budgetData.preferences.musicChoice} (
+                                          {budgetData.preferences.musicChoice === "Playlist Only" ? 
+                                            `80% savings from DJ rate (${formatCurrency(category.estimatedCost * 0.2)})` :
+                                           budgetData.preferences.musicChoice === "Live Band Only" ? 
+                                            `80% premium over DJ rate (${formatCurrency(category.estimatedCost * 1.8)})` :
+                                           budgetData.preferences.musicChoice === "Both DJ & Band" ? 
+                                            `100% premium over DJ rate (${formatCurrency(category.estimatedCost * 2.0)})` : 
+                                            `Standard DJ rate (${formatCurrency(category.estimatedCost)})`}
                                         )</p>
-                                    )}
-                                    <p>• Coverage Hours: {budgetData.preferences?.coverageHours || "8"} hours</p>
-                                  </>
-                                )}
+                                      ) : (
+                                        <p>• Tip: Different music choices can significantly impact your budget. Complete the entertainment survey to see exact costs.</p>
+                                      )}
+                                      {budgetData.preferences?.musicHours && (
+                                        <p>• Hours Needed: {budgetData.preferences.musicHours} hours</p>
+                                      )}
+                                    </>
+                                  )}
 
-                                {/* Entertainment Details */}
-                                {category.name === "Entertainment" && (
-                                  <>
-                                    <p>• Cost Structure: 80% fixed base rate, 20% additional equipment/staff</p>
-                                    {budgetData.preferences?.musicChoice ? (
-                                      <p>• Your Choice: {budgetData.preferences.musicChoice} (
-                                        {budgetData.preferences.musicChoice === "Playlist Only" ? 
-                                          `80% savings from DJ rate (${formatCurrency(category.estimatedCost * 0.2)})` :
-                                         budgetData.preferences.musicChoice === "Live Band Only" ? 
-                                          `80% premium over DJ rate (${formatCurrency(category.estimatedCost * 1.8)})` :
-                                         budgetData.preferences.musicChoice === "Both DJ & Band" ? 
-                                          `100% premium over DJ rate (${formatCurrency(category.estimatedCost * 2.0)})` : 
-                                          `Standard DJ rate (${formatCurrency(category.estimatedCost)})`}
-                                      )</p>
-                                    ) : (
-                                      <p>• Tip: Different music choices can significantly impact your budget. Complete the entertainment survey to see exact costs.</p>
-                                    )}
-                                    {budgetData.preferences?.musicHours && (
-                                      <p>• Hours Needed: {budgetData.preferences.musicHours} hours</p>
-                                    )}
-                                  </>
-                                )}
+                                  {/* Hair and Make-up Details */}
+                                  {category.name === "Hair_makeup" && (
+                                    <>
+                                      <p>• Cost Structure: 70% service costs, 20% products, 10% travel fees</p>
+                                      {budgetData.preferences?.makeupFor && (
+                                        <p>• Services For: {budgetData.preferences.makeupFor.join(", ")}</p>
+                                      )}
+                                      {budgetData.preferences?.makeupServices && (
+                                        <p>• Includes: {budgetData.preferences.makeupServices.includes("trial") ? "Trials included" : "No trials"}</p>
+                                      )}
+                                      <p>• Cost per person: ${Math.round(category.estimatedCost / Math.max(1, budgetData.preferences?.makeupFor?.length || 1))}</p>
+                                    </>
+                                  )}
 
-                                {/* Hair and Make-up Details */}
-                                {category.name === "Hair_makeup" && (
-                                  <>
-                                    <p>• Cost Structure: 70% service costs, 20% products, 10% travel fees</p>
-                                    {budgetData.preferences?.makeupFor && (
-                                      <p>• Services For: {budgetData.preferences.makeupFor.join(", ")}</p>
-                                    )}
-                                    {budgetData.preferences?.makeupServices && (
-                                      <p>• Includes: {budgetData.preferences.makeupServices.includes("trial") ? "Trials included" : "No trials"}</p>
-                                    )}
-                                    <p>• Cost per person: ${Math.round(category.estimatedCost / Math.max(1, budgetData.preferences?.makeupFor?.length || 1))}</p>
-                                  </>
-                                )}
+                                  {/* Flowers Details */}
+                                  {category.name === "Flowers" && (
+                                    <>
+                                      <p>• Your Style: {budgetData.preferences?.floralStyle || "Simple & Classic"} (
+                                        {budgetData.preferences?.floralStyle === "Elaborate & Luxurious" ? "50% more than simple & classic" :
+                                         budgetData.preferences?.floralStyle === "Moderate" ? "25% more than simple & classic" : "standard pricing"}
+                                        )</p>
+                                      {budgetData.preferences?.diyElements?.includes("flowers") && (
+                                        <p>• DIY Elements: Some floral elements will be DIY (15-25% potential savings)</p>
+                                      )}
+                                    </>
+                                  )}
 
-                                {/* Flowers Details */}
-                                {category.name === "Flowers" && (
-                                  <>
-                                    <p>• Your Style: {budgetData.preferences?.floralStyle || "Simple & Classic"} (
-                                      {budgetData.preferences?.floralStyle === "Elaborate & Luxurious" ? "50% more than simple & classic" :
-                                       budgetData.preferences?.floralStyle === "Moderate" ? "25% more than simple & classic" : "standard pricing"}
-                                      )</p>
-                                    {budgetData.preferences?.diyElements?.includes("flowers") && (
-                                      <p>• DIY Elements: Some floral elements will be DIY (15-25% potential savings)</p>
-                                    )}
-                                  </>
-                                )}
+                                  {/* Transportation Details */}
+                                  {category.name === "Transportation" && (
+                                    <>
+                                      <p>• Vehicle Type: {budgetData.preferences?.transportationType || "Standard sedan"} (
+                                        {budgetData.preferences?.transportationType === "Luxury Sedan" ? "30% more than standard" :
+                                         budgetData.preferences?.transportationType === "SUV" ? "40% more than standard" :
+                                         budgetData.preferences?.transportationType === "Limo" ? "60% more than standard" :
+                                         budgetData.preferences?.transportationType === "Party Bus" ? "80% more than standard" : "standard pricing"}
+                                        )</p>
+                                      <p>• Hours Needed: {budgetData.preferences?.transportationHours || "4"} hours</p>
+                                    </>
+                                  )}
 
-                                {/* Transportation Details */}
-                                {category.name === "Transportation" && (
-                                  <>
-                                    <p>• Vehicle Type: {budgetData.preferences?.transportationType || "Standard sedan"} (
-                                      {budgetData.preferences?.transportationType === "Luxury Sedan" ? "30% more than standard" :
-                                       budgetData.preferences?.transportationType === "SUV" ? "40% more than standard" :
-                                       budgetData.preferences?.transportationType === "Limo" ? "60% more than standard" :
-                                       budgetData.preferences?.transportationType === "Party Bus" ? "80% more than standard" : "standard pricing"}
-                                      )</p>
-                                    <p>• Hours Needed: {budgetData.preferences?.transportationHours || "4"} hours</p>
-                                  </>
-                                )}
+                                  {/* Planning Details */}
+                                  {category.name === "Planning" && (
+                                    <>
+                                      <p>• Service Level: {budgetData.preferences?.planningAssistance || "Month-of Coordinator"} (
+                                        {budgetData.preferences?.planningAssistance === "Full Planning" ? "3x month-of coordinator" :
+                                         budgetData.preferences?.planningAssistance === "Partial Planning" ? "2x month-of coordinator" : "standard month-of pricing"}
+                                        )</p>
+                                    </>
+                                  )}
 
-                                {/* Planning Details */}
-                                {category.name === "Planning" && (
-                                  <>
-                                    <p>• Service Level: {budgetData.preferences?.planningAssistance || "Month-of Coordinator"} (
-                                      {budgetData.preferences?.planningAssistance === "Full Planning" ? "3x month-of coordinator" :
-                                       budgetData.preferences?.planningAssistance === "Partial Planning" ? "2x month-of coordinator" : "standard month-of pricing"}
-                                      )</p>
-                                  </>
-                                )}
+                                  {/* For other categories, show typical range */}
+                                  {!["Catering", "Venue", "Photography", "Music", "Hair and Makeup", "Flowers", "Transportation", "Planning"].includes(category.name) && (
+                                    <p>• Typical range for {category.name.toLowerCase()}: {formatCurrency(defaultTipsForCategory(category.name).ranges.min)} - {formatCurrency(defaultTipsForCategory(category.name).ranges.max)}</p>
+                                  )}
+                                </div>
+                              </div>
 
-                                {/* For other categories, show typical range */}
-                                {!["Catering", "Venue", "Photography", "Music", "Hair and Makeup", "Flowers", "Transportation", "Planning"].includes(category.name) && (
-                                  <p>• Typical range for {category.name.toLowerCase()}: {formatCurrency(defaultTipsForCategory(category.name).ranges.min)} - {formatCurrency(defaultTipsForCategory(category.name).ranges.max)}</p>
-                                )}
-
-                                {/* Show money-saving tips */}
-                                <div className="mt-4">
-                                  <h5 className="font-medium mb-2">Money-Saving Tips:</h5>
-                                  <ul className="list-disc pl-4 space-y-1">
-                                    {defaultTipsForCategory(category.name).tips.map((tip, index) => (
-                                      <li key={index}>{tip}</li>
-                                    ))}
-                                  </ul>
+                              {/* Budget Input */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`budget-${category.id}`}>Adjust Budget</Label>
+                                <div className="flex gap-2">
+                                  <Input
+                                    id={`budget-${category.id}`}
+                                    type="number"
+                                    value={category.estimatedCost}
+                                    onChange={(e) => handleCategoryUpdate(category.id, parseInt(e.target.value) || 0)}
+                                    className="w-32"
+                                  />
                                 </div>
                               </div>
                             </div>
-
-                            {/* Budget Input */}
-                            <div className="space-y-2">
-                              <Label htmlFor={`budget-${category.id}`}>Adjust Budget</Label>
-                              <div className="flex gap-2">
-                                <Input
-                                  id={`budget-${category.id}`}
-                                  type="number"
-                                  value={category.estimatedCost}
-                                  onChange={(e) => handleCategoryUpdate(category.id, parseInt(e.target.value) || 0)}
-                                  className="w-32"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
+                          )}
+                        </div>
+                      </CardContent>
+                    </section>
                   </Card>
                 );
               })}
