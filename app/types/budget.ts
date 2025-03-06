@@ -14,6 +14,11 @@ export interface BudgetCategory {
     min: number;
     max: number;
   };
+  currentChoice?: string;
+  alternatives?: Array<{
+    option: string;
+    savings: number;
+  }>;
 }
 
 export interface BudgetPreferences {

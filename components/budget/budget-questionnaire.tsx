@@ -58,6 +58,8 @@ interface BudgetFormData {
   
   // Stationery
   stationeryType: typeof STATIONERY_TYPE_OPTIONS[number];
+  saveTheDate: 'digital' | 'printed' | 'none';
+  invitationType: 'digital' | 'printed' | 'both';
   
   // Florals
   floralStyle: typeof FLORAL_STYLE_OPTIONS[number];
@@ -91,19 +93,31 @@ interface BudgetFormData {
 }
 
 // Update the predefined options
-const CATERING_OPTIONS = ["Plated", "Buffet", "Family Style", "Food Stations", "Heavy Appetizers"] as const;
-const BAR_OPTIONS = ["Full Open Bar", "Beer & Wine Only", "Limited Open Bar", "Cash Bar", "No Alcohol"] as const;
+const CATERING_OPTIONS = [
+  "Plated Service (+30% over buffet)",
+  "Buffet Service (Base Rate)",
+  "Family Style (+20% over buffet)",
+  "Food Stations (+15% over buffet)"
+] as const;
+
+const BAR_OPTIONS = [
+  "Open Bar",
+  "Beer & Wine Only",
+  "Cash Bar",
+  "No Alcohol"
+] as const;
+
 const PHOTO_VIDEO_OPTIONS = ["Both Photography & Videography", "Photography Only", "Videography Only"] as const;
-const COVERAGE_OPTIONS = ["Full Day Coverage", "Partial Day Coverage", "Ceremony & Portraits Only"] as const;
-const FLORAL_STYLE_OPTIONS = ["Fresh", "Artificial", "Mixed"] as const;
-const CEREMONY_MUSIC_OPTIONS = ["Live", "Recorded", "None"] as const;
-const RECEPTION_MUSIC_OPTIONS = ["DJ", "Band", "Both", "Playlist"] as const;
+const COVERAGE_OPTIONS = ["Full Day Coverage (8-10 hours)", "Partial Day Coverage (6 hours)", "Ceremony & Portraits Only (4 hours)"] as const;
+const FLORAL_STYLE_OPTIONS = ["Fresh Flowers (Premium)", "Artificial Flowers (Budget-Friendly)", "Mixed Fresh & Artificial"] as const;
+const CEREMONY_MUSIC_OPTIONS = ["Live Music", "No Live - Will Use Recorded Track", "None"] as const;
+const RECEPTION_MUSIC_OPTIONS = ["Live Music", "No Live - Will Use Recorded Track", "None"] as const;
 const BEAUTY_STYLE_OPTIONS = ["DIY", "Bride Only", "Bride and Party"] as const;
 const VENUE_TYPE_OPTIONS = ["paid", "church", "temple", "family-property", "other"] as const;
-const TRANSPORTATION_TYPE_OPTIONS = ["None", "Venue to Venue", "Hotel to Venue", "Both"] as const;
-const STATIONERY_TYPE_OPTIONS = ["Digital", "Print", "Both"] as const;
+const TRANSPORTATION_TYPE_OPTIONS = ["None", "Guest Shuttle Service", "Wedding Party Transportation", "Both"] as const;
+const STATIONERY_TYPE_OPTIONS = ["Digital Only", "Printed Only", "Both Digital & Print"] as const;
 const DRESS_TYPE_OPTIONS = ["Custom", "Off Rack"] as const;
-const WEDDING_PARTY_SIZES = ["Small (1-4 people)", "Medium (5-8 people)", "Large (9+ people)"] as const;
+const WEDDING_PARTY_SIZES = ["None (Couple Only)", "Small (1-4 people)", "Medium (5-8 people)", "Large (9+ people)"] as const;
 const CEREMONY_DECOR_LEVELS = ["Minimal", "Standard", "Elaborate"] as const;
 const ADDITIONAL_DECOR_AREAS = ["None", "Some", "Extensive"] as const;
 
@@ -149,12 +163,14 @@ export default function BudgetSurvey() {
     photoVideo: '' as typeof PHOTO_VIDEO_OPTIONS[number],
     coverage: '' as typeof COVERAGE_OPTIONS[number],
     coverageHours: '',
-    ceremonyMusic: '' as typeof CEREMONY_MUSIC_OPTIONS[number],
-    receptionMusic: '' as typeof RECEPTION_MUSIC_OPTIONS[number],
+    ceremonyMusic: 'None' as typeof CEREMONY_MUSIC_OPTIONS[number],
+    receptionMusic: 'None' as typeof RECEPTION_MUSIC_OPTIONS[number],
     musicHours: '',
     weddingPartySize: '' as typeof WEDDING_PARTY_SIZES[number],
     ceremonyDecorLevel: '' as typeof CEREMONY_DECOR_LEVELS[number],
     additionalDecorAreas: '' as typeof ADDITIONAL_DECOR_AREAS[number],
+    saveTheDate: 'none' as 'digital' | 'printed' | 'none',
+    invitationType: 'digital' as 'digital' | 'printed' | 'both',
   });
 
   useEffect(() => {
@@ -221,10 +237,10 @@ export default function BudgetSurvey() {
       if (budgetData.photoVideo === "Both Photography & Videography") {
         priorities.push("photography");
       }
-      if (budgetData.floralStyle === "Fresh") {
+      if (budgetData.floralStyle === "Fresh Flowers (Premium)") {
         priorities.push("florals");
       }
-      if (budgetData.receptionMusic === "Band" || budgetData.receptionMusic === "Both") {
+      if (budgetData.receptionMusic === "Live Music") {
         priorities.push("entertainment");
       }
 
@@ -410,7 +426,7 @@ export default function BudgetSurvey() {
                 Let's create your personalized wedding budget based on your location and preferences
               </p>
               <p className="mt-2 text-sm sm:text-base text-[#4A5D4E]">
-                This might seem like a lot of questions, but it'll only take about 5 minutes. If you don't know the answer, go with your best guess for now. You can always change it later!
+                This questionnaire will take less than 10 minutes to complete. If you're unsure about any answers, you can make your best estimate - all choices can be adjusted later.
               </p>
             </div>
           </div>
@@ -588,7 +604,7 @@ export default function BudgetSurvey() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Photography and videography, or just one?</Label>
-                <p className="text-sm text-sage-600">Full photo & video packages average $4000-7000, while photography-only typically ranges $2500-4000.</p>
+                <p className="text-sm text-sage-600">Full photo & video packages typically range $5000-8000, photography-only $3500-5000, and videography-only $2500-4000.</p>
                 <Select
                   value={budgetData.photoVideo}
                   onValueChange={(value: typeof PHOTO_VIDEO_OPTIONS[number]) => 
@@ -610,7 +626,7 @@ export default function BudgetSurvey() {
 
               <div className="space-y-2">
                 <Label>Coverage Length</Label>
-                <p className="text-sm text-sage-600">Full-day coverage (8-10 hours), partial day coverage (6 hours), or ceremony & portraits only (3-4 hours).</p>
+                <p className="text-sm text-sage-600">Full-day coverage (8-10 hours), partial day coverage (6 hours), or ceremony & portraits only (4 hours).</p>
                 <Select
                   value={budgetData.coverage}
                   onValueChange={(value: typeof COVERAGE_OPTIONS[number]) => 
@@ -641,7 +657,7 @@ export default function BudgetSurvey() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Floral Style Preference</Label>
-                <p className="text-sm text-sage-600">Fresh flowers are typically the baseline cost for floral budgets.</p>
+                <p className="text-sm text-sage-600">Fresh flowers typically cost $2500-6000+, artificial flowers $500-3000, and a hybrid approach $1500-4000. Includes bridal bouquet, wedding party flowers, and reception centerpieces.</p>
                 <Select
                   value={budgetData.floralStyle}
                   onValueChange={(value: typeof FLORAL_STYLE_OPTIONS[number]) => 
@@ -734,11 +750,35 @@ export default function BudgetSurvey() {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Catering & Bar Service</CardTitle>
+              <CardDescription className="space-y-4">
+                <div>
+                  Base buffet rate typically ranges $75-150 per person depending on menu selections.
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2">Service Styles:</p>
+                  <ul className="space-y-1 list-none">
+                    <li>• Plated: Full service dining with dedicated staff</li>
+                    <li>• Buffet: Self-service with attendant assistance</li>
+                    <li>• Family Style: Shared platters served to each table</li>
+                    <li>• Food Stations: Interactive service with specialty options</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2">Bar Service Options:</p>
+                  <ul className="space-y-1 list-none">
+                    <li>• Open Bar ($45-60/person): House liquors, wines, and select beers</li>
+                    <li>• Beer & Wine Only ($35-45/person): Domestic/imported beers and house wines</li>
+                    <li>• Cash Bar: Guests pay for drinks, setup fee applies</li>
+                    <li>• No Alcohol: Non-alcoholic beverages included with catering</li>
+                  </ul>
+                </div>
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Catering Style</Label>
-                <p className="text-sm text-sage-600">Plated dinners and food stations are typically higher cost options, while buffet style and heavy appetizers are mid-range options.</p>
+                <Label>Service Style</Label>
                 <Select
                   value={budgetData.cateringStyle}
                   onValueChange={(value: typeof CATERING_OPTIONS[number]) => 
@@ -760,7 +800,6 @@ export default function BudgetSurvey() {
 
               <div className="space-y-2">
                 <Label>Bar Service</Label>
-                <p className="text-sm text-sage-600">Full open bars typically cost $45-65 per guest.</p>
                 <Select
                   value={budgetData.barType}
                   onValueChange={(value: typeof BAR_OPTIONS[number]) => 
@@ -791,7 +830,7 @@ export default function BudgetSurvey() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Beauty Services</Label>
-                <p className="text-sm text-sage-600">Bridal hair and makeup averages $250-400. Adding the wedding party typically costs $100-150 per person.</p>
+                <p className="text-sm text-sage-600">Bridal hair & makeup typically costs $300-500, with each additional person $150-200. Most artists require minimum bookings and may charge travel fees.</p>
                 <Select
                   value={budgetData.beautyStyle}
                   onValueChange={(value: typeof BEAUTY_STYLE_OPTIONS[number]) => 
@@ -831,11 +870,34 @@ export default function BudgetSurvey() {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Transportation</CardTitle>
+              <CardDescription className="space-y-4">
+                <div>
+                  Transportation services typically require 4-hour minimums.
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2">Service Options:</p>
+                  <ul className="space-y-1 list-none">
+                    <li>• Guest Shuttle Service: $500-800 per bus (seats 30-50 guests)</li>
+                    <li>• Wedding Party Transportation: $400-800 for luxury vehicles</li>
+                    <li>• Combined Service: Both guest shuttle and wedding party transport</li>
+                    <li>• None: No transportation service needed</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2">Additional Information:</p>
+                  <ul className="space-y-1 list-none">
+                    <li>• Multiple pickup/dropoff locations may increase costs</li>
+                    <li>• Service duration affects final pricing</li>
+                    <li>• Gratuity typically not included in base rates</li>
+                  </ul>
+                </div>
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Transportation Needs</Label>
-                <p className="text-sm text-sage-600">Basic sedan service starts at $400-600. Guest shuttles typically cost $500-800 per vehicle.</p>
                 <Select
                   value={budgetData.transportationType}
                   onValueChange={(value: typeof TRANSPORTATION_TYPE_OPTIONS[number]) => 
@@ -854,21 +916,6 @@ export default function BudgetSurvey() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {budgetData.transportationType !== 'None' && (
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="needTransportation"
-                      checked={budgetData.needTransportation}
-                      onCheckedChange={(checked: boolean) => 
-                        setBudgetData(prev => ({ ...prev, needTransportation: checked }))
-                      }
-                    />
-                    <Label htmlFor="needTransportation">Guest transportation needed</Label>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
@@ -876,26 +923,71 @@ export default function BudgetSurvey() {
         {step === 7 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Stationery</CardTitle>
+              <CardTitle>Entertainment</CardTitle>
+              <CardDescription className="space-y-4">
+                <div>
+                  Most services require a 4-6 hour minimum booking and include setup, sound equipment, and basic lighting.
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2">Ceremony Music:</p>
+                  <ul className="space-y-1 list-none">
+                    <li>• Live Music: String trio/quartet ($800-1200)</li>
+                    <li>• Recorded Music: Equipment rental ($100-300)</li>
+                    <li>• No Music: For intimate ceremonies</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2">Reception Entertainment:</p>
+                  <ul className="space-y-1 list-none">
+                    <li>• Live Band: Full band with MC ($4000-8000+)</li>
+                    <li>• DJ: Professional DJ with MC ($1500-3000)</li>
+                    <li>• Recorded Music: DIY playlist (equipment fees apply)</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-medium mb-2">Package Includes:</p>
+                  <ul className="space-y-1 list-none">
+                    <li>• Professional sound system & lighting</li>
+                    <li>• Setup/breakdown & backup equipment</li>
+                  </ul>
+                </div>
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Stationery Type</Label>
-                <p className="text-sm text-sage-600">Digital invitations cost $50-200 total. Printed suites average $400-800 for 100 guests.</p>
+                <Label>Ceremony Music</Label>
                 <Select
-                  value={budgetData.stationeryType}
-                  onValueChange={(value: typeof STATIONERY_TYPE_OPTIONS[number]) => 
-                    setBudgetData(prev => ({ ...prev, stationeryType: value }))
+                  value={budgetData.ceremonyMusic}
+                  onValueChange={(value: typeof CEREMONY_MUSIC_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, ceremonyMusic: value }))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    {STATIONERY_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
+                    {CEREMONY_MUSIC_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Label>Reception Entertainment</Label>
+                <Select
+                  value={budgetData.receptionMusic}
+                  onValueChange={(value: typeof RECEPTION_MUSIC_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, receptionMusic: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECEPTION_MUSIC_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -907,18 +999,67 @@ export default function BudgetSurvey() {
         {step === 8 && (
           <Card className="mb-6">
             <CardHeader>
+              <CardTitle>Stationery</CardTitle>
+              <CardDescription>
+                Choose your preferred options for save-the-dates and wedding invitations.
+                Digital options are more budget-friendly, while printed options offer a traditional touch.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Save the Dates</Label>
+                <Select
+                  value={budgetData.saveTheDate}
+                  onValueChange={(value: 'digital' | 'printed' | 'none') => 
+                    setBudgetData(prev => ({ ...prev, saveTheDate: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="digital">Digital ($100-300)</SelectItem>
+                    <SelectItem value="printed">Printed ($300-800)</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Label>Wedding Invitations</Label>
+                <Select
+                  value={budgetData.invitationType}
+                  onValueChange={(value: 'digital' | 'printed' | 'both') => 
+                    setBudgetData(prev => ({ ...prev, invitationType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="digital">Digital ($200-500)</SelectItem>
+                    <SelectItem value="printed">Printed ($800-2000+)</SelectItem>
+                    <SelectItem value="both">Both Digital & Print ($1000-2500+)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 9 && (
+          <Card className="mb-6">
+            <CardHeader>
               <CardTitle>Favors</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Would you like to include wedding favors?</Label>
+                <Label>Wedding Favors</Label>
                 <p className="text-sm text-sage-600">Wedding favors typically cost $3-10 per guest. For {budgetData.guestCount || '100'} guests, this would be ${((parseInt(budgetData.guestCount) || 100) * 3)}-${((parseInt(budgetData.guestCount) || 100) * 10)}.</p>
                 <Select
                   value={budgetData.includeFavors === true ? "yes" : budgetData.includeFavors === false ? "no" : ""}
                   onValueChange={(value) => 
                     setBudgetData(prev => ({ 
                       ...prev, 
-                      includeFavors: value === "yes" || value === "maybe",
+                      includeFavors: value === "yes",
                       favorCostPerPerson: value === "no" ? "" : prev.favorCostPerPerson
                     }))
                   }
@@ -927,9 +1068,8 @@ export default function BudgetSurvey() {
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="yes">Yes, definitely want favors</SelectItem>
-                    <SelectItem value="maybe">Maybe, still deciding</SelectItem>
-                    <SelectItem value="no">No, skipping favors</SelectItem>
+                    <SelectItem value="yes">Yes, include favors</SelectItem>
+                    <SelectItem value="no">No, skip favors</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -946,71 +1086,6 @@ export default function BudgetSurvey() {
                   />
                 </div>
               )}
-            </CardContent>
-          </Card>
-        )}
-
-        {step === 9 && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Entertainment</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Ceremony Music</Label>
-                <p className="text-sm text-sage-600">A live string quartet or soloist typically adds $800-2000 to your budget.</p>
-                <Select
-                  value={budgetData.ceremonyMusic}
-                  onValueChange={(value: typeof CEREMONY_MUSIC_OPTIONS[number]) => 
-                    setBudgetData(prev => ({ ...prev, ceremonyMusic: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CEREMONY_MUSIC_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Reception Entertainment</Label>
-                <p className="text-sm text-sage-600">DJs average $1500-3000, live bands $4000-8000.</p>
-                <Select
-                  value={budgetData.receptionMusic}
-                  onValueChange={(value: typeof RECEPTION_MUSIC_OPTIONS[number]) => 
-                    setBudgetData(prev => ({ ...prev, receptionMusic: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RECEPTION_MUSIC_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Entertainment Hours</Label>
-                <p className="text-sm text-sage-600">Most receptions need 4-6 hours of entertainment.</p>
-                <Input
-                  type="number"
-                  name="musicHours"
-                  placeholder="Enter number of hours"
-                  value={budgetData.musicHours}
-                  onChange={handleInputChange}
-                />
-              </div>
             </CardContent>
           </Card>
         )}
@@ -1254,7 +1329,7 @@ export default function BudgetSurvey() {
                     variant="ghost" 
                     size="sm" 
                     onClick={() => {
-                      setStep(9);
+                      setStep(7);
                       const url = new URL(window.location.href);
                       url.searchParams.set('fromSummary', 'true');
                       window.history.pushState({}, '', url);
@@ -1334,10 +1409,6 @@ export default function BudgetSurvey() {
                     <div>
                       <Label className="text-sage-600">Transportation Type</Label>
                       <p className="font-medium">{budgetData.transportationType || "Not specified"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sage-600">Guest Transportation</Label>
-                      <p className="font-medium">{budgetData.needTransportation ? "Yes" : "No"}</p>
                     </div>
                   </div>
                 </CardContent>

@@ -156,13 +156,15 @@ export default function OnboardingPage() {
                       value={budget}
                       onValueChange={setBudget}
                       min={1000}
-                      max={500000}
+                      max={250000}
                       step={1000}
                       className="w-full [&>[role=slider]]:bg-[#738678] [&>[role=slider]]:border-[#738678] [&>.range]:bg-[#738678]"
                     />
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-sage-600">Budget:</span>
-                      <span className="font-medium text-sage-900">{formatCurrency(budget[0])}</span>
+                      <span className="font-medium text-sage-900">
+                        {budget[0] === 250000 ? "$250k+" : formatCurrency(budget[0])}
+                      </span>
                     </div>
                   </div>
                 </div>

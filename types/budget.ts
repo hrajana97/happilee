@@ -5,7 +5,6 @@ export type BudgetCategory = {
   estimatedCost: number
   actualCost: number
   remaining: number
-  priority: 'high' | 'medium' | 'low'
   rationale: string
   notes?: string
   description?: string

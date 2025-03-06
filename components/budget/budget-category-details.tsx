@@ -19,7 +19,7 @@ interface BudgetCategoryDetailsProps {
 
 const categoryDescriptions: Record<string, string> = {
   venue: "Includes venue rental, ceremony site fee, reception space, outdoor areas, setup/breakdown fees, liability insurance, permits, tables, chairs, basic linens, lighting, climate control, parking, and on-site coordination.",
-  catering: "Covers menu planning, food preparation, service staff, kitchen equipment, bar service, bartenders, tableware, glassware, linens, buffet/station setup, tasting sessions, delivery, setup, cleanup, and service charges/gratuities.",
+  catering: "Includes menu, food preparation, service staff, bar service, tableware, setup/cleanup, and gratuities.",
   photography: "Includes pre-wedding consultation, engagement session, full wedding day coverage, second photographer, digital files, online gallery, high-resolution images, print rights, wedding albums, prints, and additional coverage like rehearsal dinner.",
   attire: "Wedding dress/suit, alterations, accessories, shoes, undergarments, veil/headpiece, jewelry, hair accessories, makeup, wedding party attire coordination, preservation, and additional outfits for other events.",
   flowers: "Ceremony flowers, bridal bouquet, bridesmaids bouquets, boutonnieres, corsages, flower girl petals, ceremony arch/chuppah arrangements, aisle decorations, reception centerpieces, cake flowers, and installation/delivery.",
