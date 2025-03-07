@@ -1,12 +1,12 @@
 export interface BudgetCategory {
   id: string;
   name: string;
-  percentage: number;
   estimatedCost: number;
-  actualCost: number;
-  remaining: number;
-  priority: 'high' | 'medium' | 'low';
-  rationale: string;
+  actualCost?: number;
+  remaining?: number;
+  percentage: number;
+  priority?: 'high' | 'medium' | 'low';
+  rationale?: string;
   notes?: string;
   description?: string;
   budgetingTips?: string[];

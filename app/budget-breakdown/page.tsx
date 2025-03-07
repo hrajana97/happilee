@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronDown, ChevronRight, FileSpreadsheet, Download, AlertTriangle } from "lucide-react";
 import type { BudgetCategory, BudgetData, UserData } from "@/types/budget";
 import { cn } from "@/lib/utils";
+import { BudgetAssistant } from "@/components/budget/budget-assistant";
 
 const initialBudgetData: BudgetData = {
   totalBudget: 0,
@@ -57,6 +58,7 @@ export default function BudgetBreakdownPage() {
   const [budgetData, setBudgetData] = useState<BudgetData>(initialBudgetData);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -94,16 +96,44 @@ export default function BudgetBreakdownPage() {
           lastUpdated: userData.lastUpdated || new Date().toISOString()
         };
         setBudgetData(transformedData);
+      } else {
+        setError("No budget data found. Please complete the budget questionnaire first.");
       }
     } catch (error) {
       console.error('Error loading budget data:', error);
+      setError("There was an error loading your budget data. Please try again later.");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 border border-red-100">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="h-6 w-6 text-red-600" />
+            <h2 className="text-xl font-semibold text-red-600">Error</h2>
+          </div>
+          <p className="text-sage-700 mb-6">{error}</p>
+          <Button asChild className="w-full">
+            <Link href="/dashboard/budget">
+              Go to Budget Questionnaire
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="w-16 h-16 border-4 border-sage-200 border-t-sage-600 rounded-full animate-spin mb-4"></div>
+        <h2 className="text-xl font-semibold text-sage-700 mb-2">Loading Your Budget</h2>
+        <p className="text-sage-600">Please wait while we prepare your budget breakdown...</p>
+      </div>
+    );
   }
 
   if (!budgetData?.calculatedBudget) {
@@ -183,6 +213,32 @@ export default function BudgetBreakdownPage() {
     return stepMap[categoryId] || 'preferences';
   };
 
+  const handleExport = () => {
+    if (!budgetData?.calculatedBudget?.categories) return;
+    
+    const csvContent = [
+      ['Category', 'Estimated Cost', 'Percentage of Budget', 'Notes'],
+      ...budgetData.calculatedBudget.categories.map(category => [
+        category.name,
+        category.estimatedCost,
+        ((category.estimatedCost / budgetData.totalBudget) * 100).toFixed(1) + '%',
+        category.notes || ''
+      ])
+    ]
+    .map(row => row.join(','))
+    .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `wedding_budget_breakdown_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-sage-100/80 via-[#E8F3E9] to-white p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
@@ -191,17 +247,9 @@ export default function BudgetBreakdownPage() {
             <Button variant="ghost" size="icon" asChild>
               <Link 
                 href={{
-                  pathname: '/dashboard/budget',
+                  pathname: '/dashboard/budget/summary',
                   query: { 
-                    step: '11',
-                    prefill: 'true',
-                    budget: budgetData.totalBudget,
-                    guestCount: budgetData.guestCount,
-                    city: budgetData.location.city,
-                    state: budgetData.location.state,
-                    isDestination: budgetData.location.country !== 'United States',
-                    weddingDate: budgetData.location.weddingDate,
-                    fromSummary: 'true'
+                    fromBreakdown: 'true'
                   }
                 }}
               >
@@ -220,11 +268,20 @@ export default function BudgetBreakdownPage() {
               <FileSpreadsheet className="h-4 w-4" />
               Spreadsheet View
             </Button>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2" onClick={handleExport}>
               <Download className="h-4 w-4" />
               Export
             </Button>
-            <Button variant="destructive" className="flex items-center gap-2">
+            <Button 
+              variant="destructive" 
+              className="flex items-center gap-2"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to start over? This will reset all your budget data.')) {
+                  storage.clearUserData();
+                  window.location.href = '/dashboard/budget';
+                }
+              }}
+            >
               Start Over
             </Button>
           </div>
@@ -437,6 +494,18 @@ export default function BudgetBreakdownPage() {
           </div>
         </div>
       </div>
+      <BudgetAssistant 
+        budgetData={budgetData} 
+        onUpdateBudget={(updates) => {
+          const updatedBudgetData = {
+            ...budgetData,
+            ...updates,
+            lastUpdated: new Date().toISOString()
+          };
+          storage.setUserData(updatedBudgetData);
+          setBudgetData(updatedBudgetData);
+        }}
+      />
     </div>
   );
 }
