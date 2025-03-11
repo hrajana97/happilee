@@ -6,7 +6,7 @@ const ssmClient = new SSMClient({
 
 export async function getOpenAIKey() {
   try {
-    const environment = process.env.NODE_ENV === 'production' ? 'production' : 'development';
+    const environment = process.env.NODE_ENV === 'production' ? 'prod' : 'dev';
     const parameterPath = `/myapp/${environment}/OPENAI_API_KEY`;
     
     // Add debug logging
