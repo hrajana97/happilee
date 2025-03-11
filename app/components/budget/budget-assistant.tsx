@@ -119,8 +119,19 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
                         : 'bg-sage-600 text-white'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
-                    <span className="text-xs opacity-70 mt-1 block">
+                    <p className="text-sm whitespace-pre-line">
+                      {message.content.split('•').map((part, i) => 
+                        i === 0 ? part : (
+                          <React.Fragment key={i}>
+                            <br />
+                            <span className="inline-block">
+                              • {part}
+                            </span>
+                          </React.Fragment>
+                        )
+                      )}
+                    </p>
+                    <span className="text-xs opacity-70 mt-2 block">
                       {message.timestamp.toLocaleTimeString()}
                     </span>
                   </div>
