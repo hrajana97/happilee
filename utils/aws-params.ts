@@ -1,7 +1,7 @@
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 
 const ssmClient = new SSMClient({ 
-  region: "ap-south-1" // replace with your AWS region
+  region: "us-east-1" // updated to match your Parameter Store region
 });
 
 export async function getOpenAIKey() {
