@@ -9,6 +9,11 @@ export async function getOpenAIKey() {
     const environment = process.env.NODE_ENV === 'production' ? 'production' : 'development';
     const parameterPath = `/myapp/${environment}/OPENAI_API_KEY`;
     
+    // Add debug logging
+    console.log('Current NODE_ENV:', process.env.NODE_ENV);
+    console.log('Resolved environment:', environment);
+    console.log('Attempting to fetch parameter from path:', parameterPath);
+    
     const command = new GetParameterCommand({
       Name: parameterPath,
       WithDecryption: true,
