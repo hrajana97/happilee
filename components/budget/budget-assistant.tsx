@@ -21,12 +21,13 @@ interface BudgetAssistantProps {
 
 function TypingIndicator() {
   return (
-    <div className="flex justify-start">
-      <div className="bg-sage-50 rounded-lg p-3 max-w-[80%]">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-sage-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-2 h-2 rounded-full bg-sage-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-2 h-2 rounded-full bg-sage-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+    <div className="flex justify-start my-2">
+      <div className="bg-sage-50 rounded-lg p-4 max-w-[80%] flex items-center gap-2">
+        <Bot className="h-4 w-4 text-sage-600" />
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 bg-sage-400 rounded-full animate-[bounce_0.8s_infinite]" />
+          <span className="w-2 h-2 bg-sage-400 rounded-full animate-[bounce_0.8s_infinite_0.2s]" />
+          <span className="w-2 h-2 bg-sage-400 rounded-full animate-[bounce_0.8s_infinite_0.4s]" />
         </div>
       </div>
     </div>
@@ -67,11 +68,13 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
     setInput('');
     setIsLoading(true);
 
-    // Create an AbortController for the timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
     try {
+      // Show typing indicator immediately
+      scrollToBottom();
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch('/api/budget-assistant', {
         method: 'POST',
         headers: {
@@ -92,6 +95,9 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
       }
 
       const data = await response.json();
+      
+      // Add a small delay before showing the response to ensure typing indicator is visible
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       setMessages(prev => [...prev, {
         role: 'assistant',
@@ -119,6 +125,39 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatText = (text: string) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>');
+  };
+
+  const renderMessageContent = (content: string) => {
+    // First split by bullet points
+    const parts = content.split('•');
+    
+    return (
+      <>
+        <span 
+          dangerouslySetInnerHTML={{ 
+            __html: formatText(parts[0]) 
+          }} 
+        />
+        {parts.slice(1).map((part, i) => (
+          <React.Fragment key={i}>
+            <br />
+            <span className="inline-block">
+              • <span 
+                dangerouslySetInnerHTML={{ 
+                  __html: formatText(part) 
+                }} 
+              />
+            </span>
+          </React.Fragment>
+        ))}
+      </>
+    );
   };
 
   return (
@@ -163,18 +202,14 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
                       : 'bg-sage-600 text-white'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-line">
-                    {message.content.split('•').map((part, i) => 
-                      i === 0 ? part : (
-                        <React.Fragment key={i}>
-                          <br />
-                          <span className="inline-block">
-                            • {part}
-                          </span>
-                        </React.Fragment>
-                      )
-                    )}
-                  </p>
+                  {message.role === 'assistant' && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <Bot className="h-4 w-4 text-sage-600" />
+                    </div>
+                  )}
+                  <div className="text-sm whitespace-pre-line [&_strong]:font-bold [&_em]:italic">
+                    {renderMessageContent(message.content)}
+                  </div>
                   <span className="text-xs opacity-70 mt-2 block">
                     {message.timestamp.toLocaleTimeString()}
                   </span>
@@ -190,16 +225,17 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isLoading ? "Generating response..." : "Ask a question or request changes..."}
+            placeholder={isLoading ? "Assistant is typing..." : "Ask a question about your budget..."}
             disabled={isLoading}
             className="flex-1"
           />
-          <Button type="submit" disabled={isLoading} className="relative">
+          <Button 
+            type="submit" 
+            disabled={isLoading} 
+            className="relative min-w-[40px] transition-all duration-200"
+          >
             {isLoading ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="sr-only">Generating response...</span>
-              </div>
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Send className="h-4 w-4" />
             )}
