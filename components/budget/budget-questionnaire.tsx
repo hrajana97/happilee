@@ -11,11 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { BudgetData, BudgetPreferences } from "@/types/budget"
 import { storage } from "@/lib/storage"
 import budgetStorage from "@/lib/budget-storage"
-import { ArrowLeft, Pencil } from "lucide-react"
+import { ArrowLeft, Pencil, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card"
 import { useSearchParams } from 'next/navigation';
 import { Switch } from "@/components/ui/switch"
+import { BudgetAssistant } from "@/components/budget/budget-assistant"
+import { motion } from "framer-motion"
 
 // Add formatCurrency helper function
 const formatCurrency = (amount: string | number) => {
@@ -509,6 +511,43 @@ export default function BudgetSurvey() {
             </div>
           </div>
         </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1 }}
+          className="mb-6 p-4 rounded-lg bg-sage-100 border border-sage-200 shadow-sm relative overflow-hidden"
+        >
+          <motion.div 
+            className="absolute inset-0 bg-sage-200/50"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: [0.95, 1.05, 0.95], opacity: [0, 0.5, 0] }}
+            transition={{ 
+              repeat: 3,
+              duration: 2,
+              delay: 2,
+              ease: "easeInOut"
+            }}
+          />
+          <div className="flex items-center gap-3 relative">
+            <motion.div
+              animate={{ 
+                scale: [1, 1.2, 1],
+                rotate: [0, 10, -10, 0]
+              }}
+              transition={{ 
+                duration: 0.5,
+                delay: 1.5,
+                repeat: 2
+              }}
+            >
+              <MessageSquare className="h-5 w-5 text-sage-600" />
+            </motion.div>
+            <p className="text-sm text-sage-700">
+              Have questions about typical costs or budgeting? Chat with our Budget Assistant! Click the chat icon in the bottom right.
+            </p>
+          </div>
+        </motion.div>
 
         <div className="flex items-center gap-4 mb-8">
           <Progress value={((step) / 12) * 100} className="flex-1 bg-sage-200 [&>[role=progressbar]]:bg-sage-700" />
@@ -1651,6 +1690,47 @@ export default function BudgetSurvey() {
             )}
           </div>
         </div>
+
+        <BudgetAssistant 
+          budgetData={{
+            budget: parseFloat(budgetData.totalBudget.replace(/[^0-9.]/g, '')) || 0,
+            totalBudget: parseFloat(budgetData.totalBudget.replace(/[^0-9.]/g, '')) || 0,
+            guestCount: parseInt(budgetData.guestCount) || 0,
+            location: {
+              city: budgetData.city,
+              state: budgetData.state,
+              country: budgetData.isDestination ? budgetData.country : "United States",
+              isDestination: budgetData.isDestination,
+              weddingDate: budgetData.weddingDate
+            },
+            priorities: [],
+            categories: [],
+            lastUpdated: new Date().toISOString(),
+            rationale: {
+              totalBudget: budgetData.totalBudget || "0",
+              locationFactor: 1,
+              seasonalFactor: 1,
+              notes: []
+            },
+            calculatedBudget: {
+              categories: [],
+              rationale: {
+                totalBudget: budgetData.totalBudget || "0",
+                locationFactor: 1,
+                seasonalFactor: 1,
+                notes: []
+              },
+              location: {
+                city: budgetData.city,
+                state: budgetData.state,
+                country: budgetData.isDestination ? budgetData.country : "United States",
+                isDestination: budgetData.isDestination,
+                weddingDate: budgetData.weddingDate
+              },
+              dayOfWeek: 'saturday'
+            }
+          }}
+        />
       </div>
     </div>
   );
