@@ -337,7 +337,7 @@ export default function BudgetSurvey() {
         // Transportation
         needTransportation: budgetData.needTransportation,
         transportationType: budgetData.transportationType,
-        transportationGuestCount: budgetData.transportationGuestCount,
+        transportationGuestCount: parseInt(budgetData.transportationGuestCount) || 0,
         transportationHours: budgetData.transportationHours,
         
         // Favors
@@ -349,18 +349,14 @@ export default function BudgetSurvey() {
         
         // Attire
         dressType: budgetData.dressType,
-        dressBudget: parseFloat(budgetData.dressBudget) || 0,
-        receptionDressBudget: budgetData.needReceptionDress ? (parseFloat(budgetData.receptionDressBudget) || 0) : 0,
-        suitBudget: parseFloat(budgetData.suitBudget) || 0,
-        accessoriesBudget: parseFloat(budgetData.accessoriesBudget) || 0,
+        dressBudget: budgetData.dressBudget,
+        receptionDressBudget: budgetData.needReceptionDress ? budgetData.receptionDressBudget : '0',
+        suitBudget: budgetData.suitBudget,
+        accessoriesBudget: budgetData.accessoriesBudget,
         needAlterations: budgetData.needAlterations,
         needReceptionDress: budgetData.needReceptionDress,
-        suitCount: budgetData.suitCount,
-        attireTotalBudget: (parseFloat(budgetData.dressBudget) || 0) +
-                          (budgetData.needReceptionDress ? (parseFloat(budgetData.receptionDressBudget) || 0) : 0) +
-                          (parseFloat(budgetData.suitBudget) || 0) +
-                          (parseFloat(budgetData.accessoriesBudget) || 0)
-      };
+        suitCount: budgetData.suitCount
+      } as BudgetPreferences;
 
       // Calculate the budget with preferences
       const result = budgetStorage.calculateBudget(
@@ -458,17 +454,16 @@ export default function BudgetSurvey() {
     const currentUserData = storage.getUserData();
     if (currentUserData) {
       // Convert form data to BudgetPreferences format
-      const preferences = {
+      const preferences: BudgetPreferences = {
         cateringStyle: budgetData.cateringStyle,
         barService: budgetData.barType,
         photoVideo: budgetData.photoVideo,
         coverage: budgetData.coverage,
         floralStyle: budgetData.floralStyle,
         musicChoice: budgetData.receptionMusic,
-        beautyCoverage: budgetData.beautyStyle,
+        beautyStyle: budgetData.beautyStyle,
         transportationType: budgetData.transportationType,
-        transportationGuestCount: budgetData.transportationGuestCount ? 
-          parseInt(budgetData.transportationGuestCount) : 0,
+        transportationGuestCount: parseInt(budgetData.transportationGuestCount) || 0,
         transportationHours: budgetData.transportationHours,
         makeupFor: budgetData.makeupFor,
         makeupServices: budgetData.makeupServices,
@@ -476,7 +471,17 @@ export default function BudgetSurvey() {
         ceremonyDecorLevel: budgetData.ceremonyDecorLevel,
         additionalDecorAreas: budgetData.additionalDecorAreas,
         stationeryType: budgetData.stationeryType,
-      } as BudgetPreferences;
+        bridesmaidCount: budgetData.bridesmaidCount,
+        includeFavors: budgetData.includeFavors,
+        favorCostPerPerson: budgetData.favorCostPerPerson,
+        dressBudget: budgetData.dressBudget,
+        suitBudget: budgetData.suitBudget,
+        accessoriesBudget: budgetData.accessoriesBudget,
+        needAlterations: budgetData.needAlterations,
+        needReceptionDress: budgetData.needReceptionDress,
+        receptionDressBudget: budgetData.receptionDressBudget,
+        suitCount: budgetData.suitCount
+      };
 
       storage.setUserData({
         ...currentUserData,
@@ -1628,7 +1633,7 @@ export default function BudgetSurvey() {
                 Start Over
               </Button>
             )}
-            {step !== 11 && !searchParams.get('fromBudget') && (
+            {step !== 11 && !searchParams.get('fromBudget') && !searchParams.get('fromSummary') && (
               <Button
                 onClick={handleNextStep}
                 className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
@@ -1636,7 +1641,7 @@ export default function BudgetSurvey() {
                 Next
               </Button>
             )}
-            {step === 11 && !searchParams.get('fromBudget') && (
+            {step === 11 && !searchParams.get('fromBudget') && !searchParams.get('fromSummary') && (
               <Button
                 onClick={calculateBudget}
                 className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
@@ -1644,7 +1649,7 @@ export default function BudgetSurvey() {
                 Calculate Budget
               </Button>
             )}
-            {searchParams.get('fromBudget') === 'true' && (
+            {(searchParams.get('fromBudget') === 'true' || searchParams.get('fromSummary') === 'true') && (
               <Button
                 onClick={handleReturnToBudget}
                 className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"

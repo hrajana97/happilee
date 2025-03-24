@@ -522,6 +522,11 @@ interface BudgetPreferences {
   favorCostPerPerson?: string
   saveTheDate?: SaveTheDateType
   invitationType?: InvitationType
+  dressBudget?: string
+  suitBudget?: string
+  accessoriesBudget?: string
+  needReceptionDress?: boolean
+  receptionDressBudget?: string
 }
 
 // Calculate the combined floral multiplier
@@ -581,11 +586,29 @@ const calculateBudgetRanges = (
   const baseGuestFactor = calculateGuestFactor(guestCount)
   const baseStaffingFactor = calculateStaffingFactor(guestCount)
 
+  // Special handling for attire - use exact sum of individual items
+  const attireTotalCost = (() => {
+    let total = 0;
+    if (preferences.dressBudget) {
+      total += parseFloat(preferences.dressBudget.replace(/[^0-9.]/g, '')) || 0;
+    }
+    if (preferences.suitBudget) {
+      total += parseFloat(preferences.suitBudget.replace(/[^0-9.]/g, '')) || 0;
+    }
+    if (preferences.accessoriesBudget) {
+      total += parseFloat(preferences.accessoriesBudget.replace(/[^0-9.]/g, '')) || 0;
+    }
+    if (preferences.needReceptionDress && preferences.receptionDressBudget) {
+      total += parseFloat(preferences.receptionDressBudget.replace(/[^0-9.]/g, '')) || 0;
+    }
+    return total;
+  })();
+
   // Calculate service style multipliers with realistic combinations
   const serviceMultipliersEffect = {
-    venue: 1.0, // Venue is primarily affected by location and season
+    venue: 1.0,
     catering: preferences.cateringStyle && isCateringStyle(preferences.cateringStyle) 
-      ? (serviceMultipliers.catering[preferences.cateringStyle] * 0.7 + 0.3) // Weighted to prevent extreme variations
+      ? (serviceMultipliers.catering[preferences.cateringStyle] * 0.7 + 0.3)
       : 1.0,
     photography: preferences.photoVideo && isPhotoVideo(preferences.photoVideo) && preferences.coverage && isCoverage(preferences.coverage)
       ? Math.min(
@@ -637,7 +660,7 @@ const calculateBudgetRanges = (
     entertainment: preferences.musicChoice && isMusicChoice(preferences.musicChoice)
       ? Math.min(serviceMultipliers.music[preferences.musicChoice], 1.8) // Cap entertainment increase
       : 1.0,
-    attire: 1.0, // Attire costs don't scale with other factors
+    attire: attireTotalCost > 0 ? (attireTotalCost / baseCosts.attire.typical) : 1.0,
     stationery: (() => {
       if (!preferences.stationeryType || !preferences.saveTheDate) return 1.0;
       
@@ -720,6 +743,12 @@ const calculateBudgetRanges = (
   Object.keys(baseCosts).forEach((category) => {
     const cat = category as CategoryType
     
+    // Skip attire category as it uses exact sum
+    if (cat === 'attire') {
+      categoryMultipliers[cat] = serviceMultipliersEffect.attire;
+      return;
+    }
+
     // Use weighted averages instead of pure multiplication for more realistic scaling
     let totalMultiplier = 1.0
     
@@ -761,12 +790,20 @@ const calculateBudgetRanges = (
 
   // Second pass: Scale all categories to fit within total budget
   if (initialTotalCost > totalBudget) {
-    const scalingFactor = totalBudget / initialTotalCost
-    adjustments.push(`Adjusted all costs down by ${Math.round((1 - scalingFactor) * 100)}% to meet target budget of ${formatCurrency(totalBudget)}`)
+    const attireCost = baseCosts.attire.typical * categoryMultipliers.attire;
+    const nonAttireCost = initialTotalCost - attireCost;
+    
+    // Scale only non-attire categories to fit remaining budget
+    const remainingBudget = totalBudget - attireCost;
+    const scalingFactor = remainingBudget / nonAttireCost;
+    
+    adjustments.push(`Adjusted non-attire costs down by ${Math.round((1 - scalingFactor) * 100)}% to meet target budget of ${formatCurrency(totalBudget)}`);
     
     Object.keys(categoryMultipliers).forEach((category) => {
-      categoryMultipliers[category as CategoryType] *= scalingFactor
-    })
+      if (category !== 'attire') {
+        categoryMultipliers[category as CategoryType] *= scalingFactor;
+      }
+    });
   }
 
   // Calculate final ranges using scaled multipliers
