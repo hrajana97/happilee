@@ -8,7 +8,7 @@ import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { BudgetData } from "@/types/budget"
+import type { BudgetData, BudgetPreferences } from "@/types/budget"
 import { storage } from "@/lib/storage"
 import budgetStorage from "@/lib/budget-storage"
 import { ArrowLeft, Pencil } from "lucide-react"
@@ -121,6 +121,25 @@ const WEDDING_PARTY_SIZES = ["None (Couple Only)", "Small (1-4 people)", "Medium
 const CEREMONY_DECOR_LEVELS = ["Minimal", "Standard", "Elaborate"] as const;
 const ADDITIONAL_DECOR_AREAS = ["None", "Some", "Extensive"] as const;
 
+type StepKey = 'venue' | 'catering' | 'photo-video' | 'decor' | 'entertainment' | 
+               'transportation' | 'attire' | 'beauty' | 'stationery' | 'favors' | 
+               'planning' | 'final';
+
+const STEP_MAP: Record<StepKey, number> = {
+  'venue': 1,
+  'catering': 4,
+  'photo-video': 2,
+  'decor': 3,
+  'entertainment': 7,
+  'transportation': 6,
+  'attire': 10,
+  'beauty': 5,
+  'stationery': 8,
+  'favors': 9,
+  'planning': 11,
+  'final': 11
+};
+
 export default function BudgetSurvey() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
@@ -177,6 +196,22 @@ export default function BudgetSurvey() {
     const userData = storage.getUserData();
     const prefill = searchParams.get('prefill') === 'true';
     const finalStep = searchParams.get('step') === 'final';
+    const stepParam = searchParams.get('step') as StepKey | null;
+    const existingPreferences = userData?.preferences || {};
+
+    // Helper function to cast preferences to correct types
+    const castPreferences = (prefs: any): Partial<BudgetFormData> => {
+      const result: Partial<BudgetFormData> = {};
+      
+      // Only copy over fields that exist in BudgetFormData
+      Object.keys(prefs).forEach(key => {
+        if (key in budgetData) {
+          result[key as keyof BudgetFormData] = prefs[key];
+        }
+      });
+      
+      return result;
+    };
 
     if (prefill) {
       const budgetParam = searchParams.get('budget');
@@ -189,6 +224,8 @@ export default function BudgetSurvey() {
         city: searchParams.get('city') || '',
         state: searchParams.get('state') || '',
         country: searchParams.get('isDestination') === 'true' ? '' : 'United States',
+        // Prefill all existing preferences with proper type casting
+        ...castPreferences(existingPreferences),
       }));
 
       if (finalStep) {
@@ -200,7 +237,13 @@ export default function BudgetSurvey() {
         totalBudget: userData.budget ? formatCurrency(userData.budget) : '',
         guestCount: userData.guestCount ? userData.guestCount.toString() : '',
         weddingDate: userData.weddingDate ? userData.weddingDate.split('T')[0] : '',
+        // Prefill all existing preferences with proper type casting
+        ...castPreferences(existingPreferences),
       }));
+    }
+
+    if (stepParam && stepParam in STEP_MAP) {
+      setStep(STEP_MAP[stepParam]);
     }
   }, [searchParams]);
 
@@ -408,6 +451,44 @@ export default function BudgetSurvey() {
     budgetStorage.clearBudgetData();
     storage.clearUserData();
     window.location.href = '/dashboard/budget';
+  };
+
+  const handleReturnToBudget = () => {
+    // Save the current preferences
+    const currentUserData = storage.getUserData();
+    if (currentUserData) {
+      // Convert form data to BudgetPreferences format
+      const preferences = {
+        cateringStyle: budgetData.cateringStyle,
+        barService: budgetData.barType,
+        photoVideo: budgetData.photoVideo,
+        coverage: budgetData.coverage,
+        floralStyle: budgetData.floralStyle,
+        musicChoice: budgetData.receptionMusic,
+        beautyCoverage: budgetData.beautyStyle,
+        transportationType: budgetData.transportationType,
+        transportationGuestCount: budgetData.transportationGuestCount ? 
+          parseInt(budgetData.transportationGuestCount) : 0,
+        transportationHours: budgetData.transportationHours,
+        makeupFor: budgetData.makeupFor,
+        makeupServices: budgetData.makeupServices,
+        weddingPartySize: budgetData.weddingPartySize,
+        ceremonyDecorLevel: budgetData.ceremonyDecorLevel,
+        additionalDecorAreas: budgetData.additionalDecorAreas,
+        stationeryType: budgetData.stationeryType,
+      } as BudgetPreferences;
+
+      storage.setUserData({
+        ...currentUserData,
+        preferences: {
+          ...currentUserData.preferences,
+          ...preferences
+        }
+      });
+    }
+    
+    // Navigate back to the budget breakdown
+    window.location.href = '/budget-breakdown';
   };
 
   return (
@@ -916,6 +997,34 @@ export default function BudgetSurvey() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {budgetData.transportationType !== 'None' && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Number of Guests Needing Transportation</Label>
+                    <p className="text-sm text-sage-600">Enter the total number of guests who will need transportation services.</p>
+                    <Input
+                      type="number"
+                      name="transportationGuestCount"
+                      placeholder="Enter number of guests"
+                      value={budgetData.transportationGuestCount}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Transportation Hours Needed</Label>
+                    <p className="text-sm text-sage-600">Most services require a 4-hour minimum booking.</p>
+                    <Input
+                      type="number"
+                      name="transportationHours"
+                      placeholder="Enter hours needed"
+                      value={budgetData.transportationHours}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
@@ -1519,7 +1628,7 @@ export default function BudgetSurvey() {
                 Start Over
               </Button>
             )}
-            {step !== 11 && (
+            {step !== 11 && !searchParams.get('fromBudget') && (
               <Button
                 onClick={handleNextStep}
                 className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
@@ -1527,7 +1636,7 @@ export default function BudgetSurvey() {
                 Next
               </Button>
             )}
-            {step === 11 && (
+            {step === 11 && !searchParams.get('fromBudget') && (
               <Button
                 onClick={calculateBudget}
                 className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
@@ -1535,12 +1644,12 @@ export default function BudgetSurvey() {
                 Calculate Budget
               </Button>
             )}
-            {step < 11 && searchParams.get('fromSummary') === 'true' && (
+            {searchParams.get('fromBudget') === 'true' && (
               <Button
-                onClick={() => setStep(11)}
+                onClick={handleReturnToBudget}
                 className="w-full sm:w-auto bg-[#738678] hover:bg-[#4A5D4E] text-white"
               >
-                Confirm & Return to Summary
+                Confirm & Return to Budget
               </Button>
             )}
           </div>

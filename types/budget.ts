@@ -38,6 +38,26 @@ export type BudgetPreferences = {
   makeupServices?: string[]
   transportationType?: string
   transportationHours?: string
+  transportationGuestCount?: number
+  weddingPartySize?: string
+  ceremonyDecorLevel?: string
+  additionalDecorAreas?: string
+  entertainment?: string
+  beautyStyle?: string
+  stationeryType?: string
+  saveTheDateType?: string
+  invitationType?: string
+  bridesmaidCount?: string
+  includeFavors?: boolean
+  favorCostPerPerson?: string
+  // Attire preferences
+  dressBudget?: string
+  suitBudget?: string
+  accessoriesBudget?: string
+  needAlterations?: boolean
+  needReceptionDress?: boolean
+  receptionDressBudget?: string
+  suitCount?: string
 }
 
 export type CalculatedBudget = {

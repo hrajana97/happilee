@@ -147,24 +147,25 @@ const baseCosts: Record<CategoryType, CostRange> = {
   hair_makeup: { min: 1500, typical: 2500, max: 4000 }
 }
 
-type CateringStyle = 'Plated' | 'Buffet' | 'Family Style' | 'Food Stations' | 'Heavy Appetizers'
-type BarService = 'Full Open Bar' | 'Beer & Wine Only' | 'Limited Open Bar' | 'Cash Bar' | 'No Alcohol'
-type PhotoVideo = 'Both Photography & Videography' | 'Photography Only' | 'Videography Only'
-type Coverage = 'Full Day Coverage' | 'Partial Day Coverage' | 'Ceremony & Portraits Only'
-type FloralStyle = 'Fresh' | 'Artificial' | 'Mixed'
-type WeddingPartySize = 'Small (1-4 people)' | 'Medium (5-8 people)' | 'Large (9+ people)'
-type CeremonyDecorLevel = 'Minimal' | 'Standard' | 'Elaborate'
-type AdditionalDecorAreas = 'None' | 'Some' | 'Extensive'
-type DiyElements = 'Yes, planning DIY elements' | 'No DIY elements planned' | 'Maybe, still deciding'
-type MusicChoice = 'DJ' | 'Live Band' | 'Both DJ & Band' | 'Other Live Music' | 'Playlist Only'
-type BeautyCoverage = 'Full Wedding Party' | 'Bride Only' | 'Bride & Bridesmaids' | 'None Needed'
-type PlannerType = 'Full Wedding Planner' | 'Month-of Coordinator' | 'Day-of Coordinator' | 'No Professional Help'
-type TransportationType = 'None' | 'Venue to Venue' | 'Hotel to Venue' | 'Both'
-type StationeryType = 'Digital' | 'Print' | 'Both'
-type BeautyStyle = 'DIY' | 'Bride Only' | 'Bride and Party'
-type SaveTheDateType = 'digital' | 'printed' | 'none'
-type InvitationType = 'digital' | 'printed' | 'both'
-type EntertainmentType = 'live music' | 'no live - will use recorded track' | 'none'
+// Export types
+export type CateringStyle = 'Plated' | 'Buffet' | 'Family Style' | 'Food Stations' | 'Heavy Appetizers'
+export type BarService = 'Full Open Bar' | 'Beer & Wine Only' | 'Limited Open Bar' | 'Cash Bar' | 'No Alcohol'
+export type PhotoVideo = 'Both Photography & Videography' | 'Photography Only' | 'Videography Only'
+export type Coverage = 'Full Day Coverage' | 'Partial Day Coverage' | 'Ceremony & Portraits Only'
+export type FloralStyle = 'Fresh' | 'Artificial' | 'Mixed'
+export type WeddingPartySize = 'Small (1-4 people)' | 'Medium (5-8 people)' | 'Large (9+ people)'
+export type CeremonyDecorLevel = 'Minimal' | 'Standard' | 'Elaborate'
+export type AdditionalDecorAreas = 'None' | 'Some' | 'Extensive'
+export type DiyElements = 'Yes, planning DIY elements' | 'No DIY elements planned' | 'Maybe, still deciding'
+export type MusicChoice = 'DJ' | 'Live Band' | 'Both DJ & Band' | 'Other Live Music' | 'Playlist Only'
+export type BeautyStyle = 'DIY' | 'Bride Only' | 'Bride and Party'
+export type StationeryType = 'Digital' | 'Print' | 'Both'
+export type SaveTheDateType = 'digital' | 'printed' | 'none'
+export type InvitationType = 'digital' | 'printed' | 'both'
+export type TransportationType = 'None' | 'Venue to Venue' | 'Hotel to Venue' | 'Both'
+export type PlannerType = 'Full Wedding Planner' | 'Month-of Coordinator' | 'Day-of Coordinator' | 'No Professional Help'
+export type EntertainmentType = 'live music' | 'no live - will use recorded track' | 'none'
+export type BeautyCoverage = 'Full Wedding Party' | 'Bride Only' | 'Bride & Bridesmaids' | 'None Needed'
 
 interface ServiceMultipliers {
   catering: Record<CateringStyle, number>
@@ -212,7 +213,8 @@ const floralMultipliers: FloralMultipliers = {
   }
 }
 
-const serviceMultipliers: ServiceMultipliers = {
+// Export service multipliers
+export const serviceMultipliers: ServiceMultipliers = {
   catering: {
     'Plated': 1.3,
     'Buffet': 1.0,
@@ -436,114 +438,57 @@ const isPlannerType = (value: string): value is PlannerType =>
 const categoryDescriptions: Record<CategoryType, {
   description: string,
   costBreakdown: string,
-  scalingExplanation: string,
-  budgetingTips: string[]
+  scalingExplanation: string
 }> = {
   venue: {
     description: "Includes rental fees for ceremony and/or reception spaces, based on your venue choices and whether you're using separate venues.",
     costBreakdown: "60% base venue rental, 25% setup and amenities, 15% staffing and coordination",
-    scalingExplanation: "Costs vary significantly based on whether you choose separate venues for ceremony and reception. Setup and staffing costs increase with guest count.",
-    budgetingTips: [
-      "Off-peak season (Nov-Mar) reduces venue fees by 20-30%",
-      "Friday/Sunday rates are typically 15-25% lower than Saturday",
-      "All-inclusive venues eliminate separate vendor fees",
-      "Single venue saves 15-25% vs separate ceremony/reception sites"
-    ]
+    scalingExplanation: "Costs vary significantly based on whether you choose separate venues for ceremony and reception. Setup and staffing costs increase with guest count."
   },
   catering: {
     description: "Food service and bar package based on your selected style and preferences.",
     costBreakdown: "Cost Distribution: Food (60%), Bar (25%), Staff & Rentals (15%)",
-    scalingExplanation: "Costs based on guest count, service style, and bar package.",
-    budgetingTips: [
-      "Buffet saves 20-30% vs plated service",
-      "Beer & wine saves 30-40% vs full bar",
-      "Food stations save 10-15% vs plated",
-      "Consider lunch/brunch for 30-40% savings"
-    ]
+    scalingExplanation: "Costs based on guest count, service style, and bar package."
   },
   photography: {
     description: "Professional photo and/or video coverage based on your selected services and coverage duration.",
     costBreakdown: "Base package varies by service type:\n- Photography Only: $3000-4500\n- Videography Only: $2500-4000\n- Both: $5000-7500\nCoverage duration affects final cost:\n- Full Day (8-10 hrs): Base rate\n- Partial Day (6 hrs): -20%\n- Ceremony/Portraits (4 hrs): -40%",
-    scalingExplanation: "Final cost is determined by:\n1. Service choice (photo/video/both)\n2. Coverage duration\n3. Location factor (travel fees may apply)\n4. Guest count (affects coverage needs)",
-    budgetingTips: [
-      "Partial day coverage saves 20-30% off full day rate",
-      "Single service costs 30-40% less than photo + video",
-      "Consider adding hours à la carte if needed",
-      "Ask about digital file delivery options"
-    ]
+    scalingExplanation: "Final cost is determined by:\n1. Service choice (photo/video/both)\n2. Coverage duration\n3. Location factor (travel fees may apply)\n4. Guest count (affects coverage needs)"
   },
   attire: {
     description: "Wedding attire costs based on your specified budgets for dress, suits, and accessories, including any alterations or reception dress if needed.",
     costBreakdown: "Total cost calculated from:\n- Main dress budget (custom or off-rack)\n- Suit budget × number of suits\n- Accessories budget\n- Reception dress (if selected)\n- Alterations (if needed, typically adds 15-20%)",
-    scalingExplanation: "Final cost is the sum of all specified budgets, with alterations calculated as a percentage when selected. Custom dresses typically cost 30-50% more than off-rack.",
-    budgetingTips: [
-      "Budget 15-20% extra for alterations if needed",
-      "Custom dresses typically start at $2500-3000",
-      "Consider sample sales for off-rack savings",
-      "Reception dresses are typically 40-50% less than ceremony dresses"
-    ]
+    scalingExplanation: "Final cost is the sum of all specified budgets, with alterations calculated as a percentage when selected. Custom dresses typically cost 30-50% more than off-rack."
   },
   flowers: {
     description: "Floral arrangements based on your chosen style, wedding party size, and decor preferences.",
     costBreakdown: "30% personal flowers (based on party size), 40% ceremony decor (by chosen level), 30% reception decor (by area count)",
-    scalingExplanation: "Costs vary by floral style (fresh/artificial/mixed), wedding party size, ceremony decor level, and number of additional decor areas.",
-    budgetingTips: [
-      "Artificial flowers cost 30-40% less than fresh",
-      "Mixed fresh/artificial reduces costs by 15-25%",
-      "Each additional decor area adds 10-15% to base cost",
-      "Each additional bridesmaid adds 5-7% to personal flowers cost"
-    ]
+    scalingExplanation: "Costs vary by floral style (fresh/artificial/mixed), wedding party size, ceremony decor level, and number of additional decor areas."
   },
   entertainment: {
     description: "Music for ceremony and reception based on your selected options and duration.",
     costBreakdown: "40% ceremony music, 60% reception entertainment (varies by choice)",
-    scalingExplanation: "Base rate varies by music choice (DJ, band, both, or other) and number of hours needed.",
-    budgetingTips: [
-      "DJs cost 60-70% less than live bands",
-      "Each additional hour adds 10-15% to base rate",
-      "Ceremony musicians cost 20-30% of total music budget",
-      "Combined DJ/band packages add 80-100% to DJ-only cost"
-    ]
+    scalingExplanation: "Base rate varies by music choice (DJ, band, both, or other) and number of hours needed."
   },
   stationery: {
     description: "Wedding stationery based on your chosen type (digital, print, or both).",
     costBreakdown: "25% design costs, 75% printing and distribution (varies by type)",
-    scalingExplanation: "Costs scale with guest count and chosen stationery type. Digital options reduce per-guest costs significantly.",
-    budgetingTips: [
-      "Digital invites cost 40-60% less than printed",
-      "Each additional insert adds 15-20% to printing cost",
-      "Letterpress adds 40-50% to standard printing cost",
-      "Digital RSVPs save $1-2 per guest in postage"
-    ]
+    scalingExplanation: "Costs scale with guest count and chosen stationery type. Digital options reduce per-guest costs significantly."
   },
   favors: {
     description: "Optional guest favors based on your preference and per-person budget.",
     costBreakdown: "90% favor items (based on per-person cost), 10% packaging and setup",
-    scalingExplanation: "Costs scale directly with guest count and chosen per-person favor budget. Optional category that can be eliminated.",
-    budgetingTips: [
-      "Bulk orders over 100 pieces save 20-30%",
-      "Basic packaging costs $0.50-1 per favor",
-      "Assembly service adds $1-2 per favor",
-      "Personalization adds 15-25% to base cost"
-    ]
+    scalingExplanation: "Costs scale directly with guest count and chosen per-person favor budget. Optional category that can be eliminated."
   },
   transportation: {
     description: "Guest shuttle services between hotel and venue, or between ceremony and reception venues.",
     costBreakdown: "Costs based on service type: hotel-to-venue (100%), venue-to-venue (100%), or both (150%). Includes vehicle rental and staffing.",
-    scalingExplanation: "Cost varies by number of guests needing transport and number of trips/locations.",
-    budgetingTips: [
-      "One shuttle (50 people) typically costs $500-800 for 4 hours",
-      "Multiple pickup locations increase base cost by 25%"
-    ]
+    scalingExplanation: "Cost varies by number of guests needing transport and number of trips/locations."
   },
   hair_makeup: {
     description: "Professional hair and makeup services for the bride and optional wedding party coverage.",
     costBreakdown: "Base cost varies by choice: DIY (20% of typical), bride only (100%), or bride with party (150%). Additional costs include products (25%) and travel fees (15%).",
-    scalingExplanation: "Costs vary based on number of people and service type (DIY, bride only, or full party).",
-    budgetingTips: [
-      "Each additional person adds 15-20% to base cost",
-      "Combined hair/makeup packages offer 10-15% savings"
-    ]
+    scalingExplanation: "Costs vary based on number of people and service type (DIY, bride only, or full party)."
   }
 }
 
@@ -1033,7 +978,7 @@ const budgetStorage = {
           rationale: categoryInfo.description,
           notes: categoryInfo.costBreakdown,
           description: categoryInfo.scalingExplanation,
-          budgetingTips: categoryInfo.budgetingTips
+          budgetingTips: []
         }
         
         return category

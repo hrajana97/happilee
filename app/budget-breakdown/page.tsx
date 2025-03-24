@@ -5,10 +5,33 @@ import Link from "next/link";
 import { storage } from "@/lib/storage";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronDown, ChevronRight, FileSpreadsheet, Download, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, FileSpreadsheet, Download, AlertTriangle, Settings2, Bot } from "lucide-react";
 import type { BudgetCategory, BudgetData, UserData } from "@/types/budget";
 import { cn } from "@/lib/utils";
 import { BudgetAssistant } from "@/components/budget/budget-assistant";
+import budgetStorage, { 
+  serviceMultipliers,
+  type CateringStyle,
+  type BarService,
+  type TransportationType,
+  type PhotoVideo,
+  type Coverage,
+  type FloralStyle,
+  type WeddingPartySize,
+  type CeremonyDecorLevel,
+  type AdditionalDecorAreas,
+  type MusicChoice,
+  type BeautyStyle,
+  type StationeryType,
+  type SaveTheDateType,
+  type InvitationType,
+  type PlannerType,
+  type EntertainmentType,
+  type BeautyCoverage
+} from "@/lib/budget-storage";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 const initialBudgetData: BudgetData = {
   totalBudget: 0,
@@ -239,6 +262,14 @@ export default function BudgetBreakdownPage() {
     document.body.removeChild(link);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setBudgetData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-sage-100/80 via-[#E8F3E9] to-white p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
@@ -356,7 +387,9 @@ export default function BudgetBreakdownPage() {
                       <ChevronDown className="h-4 w-4" /> : 
                       <ChevronRight className="h-4 w-4" />
                     }
-                    <span className="text-green-600 font-medium">{category.name}</span>
+                    <span className="text-green-600 font-medium">
+                      {category.id === 'hair_makeup' ? 'Hair and Makeup' : category.name}
+                    </span>
                   </div>
                   <div className="col-span-4 font-medium">
                     {formatCurrency(category.estimatedCost)}
@@ -377,15 +410,261 @@ export default function BudgetBreakdownPage() {
                   <div className="p-6 bg-sage-50/50 border-t">
                     <div className="w-full">
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Main Info - Takes 2 columns on large screens */}
-                        <div className="lg:col-span-2 space-y-6">
+                        {/* Main Info - Takes full width */}
+                        <div className="lg:col-span-3 space-y-6">
                           <div className="bg-white rounded-lg p-5 shadow-sm">
-                            <h4 className="text-sm font-semibold text-sage-700 mb-3">About This Category</h4>
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-sm font-semibold text-sage-700">About This Category</h4>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-sage-500">Edit via:</span>
+                                <Button variant="outline" size="sm" className="h-7">
+                                  UI
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-7">
+                                  Assistant
+                                </Button>
+                              </div>
+                            </div>
                             <p className="text-sage-600 mb-4">{category.rationale}</p>
                             
                             <div className="border-t pt-4 mt-4">
-                              <h5 className="text-sm font-medium text-sage-700 mb-2">Cost Breakdown</h5>
-                              <p className="text-sage-600">{category.notes}</p>
+                              <h5 className="text-sm font-medium text-sage-700 mb-2">Cost Impact of Your Choices</h5>
+                              <div className="mt-6">
+                                <h3 className="text-lg font-semibold mb-3">Cost Impact of Your Choices</h3>
+                                <div className="space-y-4">
+                                  {category.id === 'photography' && (
+                                    <>
+                                      <p>Your photography choices impact costs in the following ways:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Service Type: {budgetData.preferences?.photoVideo || 'Not specified'} - {budgetData.preferences?.photoVideo ? serviceMultipliers.photography[budgetData.preferences.photoVideo as PhotoVideo] : 1}x base rate</li>
+                                        <li>Coverage Duration: {budgetData.preferences?.coverage || 'Not specified'} - {budgetData.preferences?.coverage ? serviceMultipliers.coverage[budgetData.preferences.coverage as Coverage] : 1}x base rate</li>
+                                        <li>Guest Count Impact: {budgetData.guestCount} guests require additional coverage and editing time</li>
+                                      </ul>
+                                    </>
+                                  )}
+                                  
+                                  {category.id === 'catering' && (
+                                    <>
+                                      <p>Your catering choices affect costs as follows:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Service Style: {budgetData.preferences?.cateringStyle || 'Not specified'} - {budgetData.preferences?.cateringStyle ? serviceMultipliers.catering[budgetData.preferences.cateringStyle as CateringStyle] : 1}x base rate</li>
+                                        <li>Bar Service: {budgetData.preferences?.barService || 'Not specified'} - {budgetData.preferences?.barService ? serviceMultipliers.bar[budgetData.preferences.barService as BarService] : 1}x base rate</li>
+                                        <li>Guest Count Impact: {budgetData.guestCount} guests affect food quantity and staffing needs</li>
+                                      </ul>
+                                      <div className="mt-4">
+                                        <Button variant="outline" size="sm" asChild>
+                                          <Link href={{
+                                            pathname: '/dashboard/budget',
+                                            query: { 
+                                              step: 'catering',
+                                              prefill: 'true',
+                                              cateringStyle: budgetData.preferences?.cateringStyle,
+                                              barService: budgetData.preferences?.barService
+                                            }
+                                          }}>
+                                            Update Catering Preferences
+                                          </Link>
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
+                                  
+                                  {category.id === 'transportation' && (
+                                    <>
+                                      <p>Your transportation choices influence costs in these ways:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Service Type: {budgetData.preferences?.transportationType || 'Not specified'} - {budgetData.preferences?.transportationType ? serviceMultipliers.transportation[budgetData.preferences.transportationType as TransportationType] : 1}x base rate</li>
+                                        <li>Guest Count: {budgetData.preferences?.transportationGuestCount || 'Not specified'} guests requiring transportation</li>
+                                        <li>Service Duration: {budgetData.preferences?.transportationHours || 'Not specified'} hours of service needed</li>
+                                      </ul>
+                                      <div className="mt-4">
+                                        <Button variant="outline" size="sm" asChild>
+                                          <Link href={{
+                                            pathname: '/dashboard/budget',
+                                            query: { 
+                                              step: 'transportation',
+                                              prefill: 'true',
+                                              transportationType: budgetData.preferences?.transportationType,
+                                              transportationGuestCount: budgetData.preferences?.transportationGuestCount,
+                                              transportationHours: budgetData.preferences?.transportationHours
+                                            }
+                                          }}>
+                                            Update Transportation Preferences
+                                          </Link>
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
+                                  
+                                  {category.id === 'flowers' && (
+                                    <>
+                                      <p>Your floral choices impact costs as follows:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Floral Style: {budgetData.preferences?.floralStyle || 'Not specified'} - {budgetData.preferences?.floralStyle ? serviceMultipliers.florals[budgetData.preferences.floralStyle as FloralStyle] : 1}x base rate</li>
+                                        <li>DIY Elements: {budgetData.preferences?.diyElements || 'Not specified'} - {budgetData.preferences?.diyElements === 'Yes, planning DIY elements' ? 0.7 : budgetData.preferences?.diyElements === 'Maybe, still deciding' ? 0.9 : 1}x base rate</li>
+                                        <li>Wedding Party Size: {budgetData.preferences?.weddingPartySize || 'Not specified'} affects bouquet and boutonniere quantities</li>
+                                      </ul>
+                                      <div className="mt-4">
+                                        <Button variant="outline" size="sm" asChild>
+                                          <Link href={{
+                                            pathname: '/dashboard/budget',
+                                            query: { 
+                                              step: 'decor',
+                                              prefill: 'true',
+                                              floralStyle: budgetData.preferences?.floralStyle,
+                                              diyElements: budgetData.preferences?.diyElements,
+                                              weddingPartySize: budgetData.preferences?.weddingPartySize
+                                            }
+                                          }}>
+                                            Update Floral Preferences
+                                          </Link>
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
+                                  
+                                  {category.id === 'entertainment' && (
+                                    <>
+                                      <p>Your entertainment choices affect costs in these ways:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Reception Entertainment: {budgetData.preferences?.entertainment || 'Not specified'} - {
+                                          (() => {
+                                            const choice = budgetData.preferences?.entertainment;
+                                            switch(choice) {
+                                              case 'DJ only': return 'Average cost $1,500-2,500';
+                                              case 'Band only': return 'Average cost $4,000-8,000';
+                                              case 'Both DJ and Band': return 'Average cost $6,000-10,000';
+                                              case 'No live music': return 'Average cost $500-1,000 (sound system rental)';
+                                              default: return 'Average cost varies by choice';
+                                            }
+                                          })()
+                                        }</li>
+                                        <li>Ceremony Music: {budgetData.preferences?.musicChoice || 'Not specified'}</li>
+                                        <li>Guest Count Impact: {budgetData.guestCount} guests affect equipment and performance needs</li>
+                                      </ul>
+                                      <div className="mt-4">
+                                        <Button variant="outline" size="sm" asChild>
+                                          <Link href={{
+                                            pathname: '/dashboard/budget',
+                                            query: { 
+                                              step: 'entertainment',
+                                              prefill: 'true',
+                                              entertainment: budgetData.preferences?.entertainment,
+                                              musicChoice: budgetData.preferences?.musicChoice
+                                            }
+                                          }}>
+                                            Update Entertainment Preferences
+                                          </Link>
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
+                                  
+                                  {category.id === 'hair_makeup' && (
+                                    <>
+                                      <p>Your beauty service choices influence costs as follows:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Service Style: {budgetData.preferences?.beautyStyle || 'Not specified'} - {budgetData.preferences?.beautyStyle ? serviceMultipliers.beauty[budgetData.preferences.beautyStyle as BeautyStyle] : 1}x base rate</li>
+                                        <li>Coverage: {budgetData.preferences?.beautyCoverage || 'Not specified'} affects the number of services needed</li>
+                                        <li>Wedding Party Size: {budgetData.preferences?.weddingPartySize || 'Not specified'} determines total service count</li>
+                                      </ul>
+                                      <div className="mt-4">
+                                        <Button variant="outline" size="sm" asChild>
+                                          <Link href={{
+                                            pathname: '/dashboard/budget',
+                                            query: { 
+                                              step: 'beauty',
+                                              prefill: 'true',
+                                              beautyStyle: budgetData.preferences?.beautyStyle,
+                                              beautyCoverage: budgetData.preferences?.beautyCoverage,
+                                              makeupFor: budgetData.preferences?.makeupFor,
+                                              makeupServices: budgetData.preferences?.makeupServices
+                                            }
+                                          }}>
+                                            Update Hair and Makeup Preferences
+                                          </Link>
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
+                                  
+                                  {category.id === 'stationery' && (
+                                    <>
+                                      <p>Your stationery choices impact costs in these ways:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Stationery Type: {budgetData.preferences?.stationeryType || 'Not specified'} - {budgetData.preferences?.stationeryType ? serviceMultipliers.stationery[budgetData.preferences.stationeryType as StationeryType] : 1}x base rate</li>
+                                        <li>Save the Dates: {budgetData.preferences?.saveTheDateType || 'Not specified'} - {budgetData.preferences?.saveTheDateType ? serviceMultipliers.saveTheDate[budgetData.preferences.saveTheDateType as SaveTheDateType] : 1}x base rate</li>
+                                        <li>Guest Count Impact: {budgetData.guestCount} guests affect invitation quantity needs</li>
+                                      </ul>
+                                      <div className="mt-4">
+                                        <Button variant="outline" size="sm" asChild>
+                                          <Link href={{
+                                            pathname: '/dashboard/budget',
+                                            query: { 
+                                              step: 'stationery',
+                                              prefill: 'true',
+                                              stationeryType: budgetData.preferences?.stationeryType,
+                                              saveTheDateType: budgetData.preferences?.saveTheDateType,
+                                              invitationType: budgetData.preferences?.invitationType
+                                            }
+                                          }}>
+                                            Update Stationery Preferences
+                                          </Link>
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
+
+                                  {category.id === 'attire' && (
+                                    <>
+                                      <p>Your attire costs are based on the following budget allocations:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Wedding Dress Budget: {formatCurrency(Number(budgetData.preferences?.dressBudget || 0))}</li>
+                                        <li>Suit Budget: {formatCurrency(Number(budgetData.preferences?.suitBudget || 0))}</li>
+                                        <li>Accessories Budget: {formatCurrency(Number(budgetData.preferences?.accessoriesBudget || 0))}</li>
+                                        {budgetData.preferences?.needAlterations && (
+                                          <li>Alterations: Included in dress budget</li>
+                                        )}
+                                        {budgetData.preferences?.needReceptionDress && (
+                                          <li>Reception Dress Budget: {formatCurrency(Number(budgetData.preferences?.receptionDressBudget || 0))}</li>
+                                        )}
+                                        <li>Number of Suits Needed: {budgetData.preferences?.suitCount || 1}</li>
+                                      </ul>
+                                      <div className="mt-4 p-3 bg-sage-50 rounded-lg">
+                                        <p className="text-sm text-sage-700">
+                                          Total Attire Budget: {formatCurrency(category.estimatedCost)}
+                                        </p>
+                                      </div>
+                                      <div className="mt-4">
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          asChild
+                                        >
+                                          <Link 
+                                            href={{
+                                              pathname: '/dashboard/budget',
+                                              query: { 
+                                                step: 'attire',
+                                                prefill: 'true',
+                                                dressBudget: budgetData.preferences?.dressBudget,
+                                                suitBudget: budgetData.preferences?.suitBudget,
+                                                accessoriesBudget: budgetData.preferences?.accessoriesBudget,
+                                                needAlterations: budgetData.preferences?.needAlterations,
+                                                needReceptionDress: budgetData.preferences?.needReceptionDress,
+                                                receptionDressBudget: budgetData.preferences?.receptionDressBudget,
+                                                suitCount: budgetData.preferences?.suitCount
+                                              }
+                                            }}
+                                          >
+                                            Update Attire Preferences
+                                          </Link>
+                                        </Button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
 
@@ -422,69 +701,6 @@ export default function BudgetBreakdownPage() {
                             </div>
                           )}
                         </div>
-
-                        {/* Cost Optimization - Takes 1 column */}
-                        <div className="lg:col-span-1">
-                          <div className="bg-white rounded-lg p-5 shadow-sm sticky top-6">
-                            <h4 className="text-sm font-semibold text-sage-700 mb-3 flex items-center gap-2">
-                              <span className="inline-block">💰</span>
-                              Cost Optimization
-                            </h4>
-                            
-                            <div className="space-y-4">
-                              {/* Current Selection */}
-                              <div className="p-3 bg-sage-50 rounded-md">
-                                <h5 className="text-sm font-medium text-sage-700 mb-1">Current Selection</h5>
-                                <p className="text-sm text-sage-600">
-                                  {category.currentChoice || `Standard ${category.name.toLowerCase()} package`}
-                                </p>
-                              </div>
-
-                              {/* Cost-saving Alternatives */}
-                              {category.alternatives && category.alternatives.length > 0 && (
-                                <div>
-                                  <h5 className="text-sm font-medium text-sage-700 mb-2">Available Alternatives</h5>
-                                  <ul className="space-y-3">
-                                    {category.alternatives.map((alternative, index) => (
-                                      <li key={index} className="flex items-start gap-2 text-sm">
-                                        <span className="text-green-600 mt-1">↓</span>
-                                        <div>
-                                          <p className="text-sage-700 font-medium">{alternative.option}</p>
-                                          <p className="text-sage-500">Save {alternative.savings}%</p>
-                                        </div>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-
-                              {/* Quick Actions */}
-                              <div className="pt-4 mt-4 border-t">
-                                <Button variant="outline" className="w-full justify-start text-left" asChild>
-                                  <Link
-                                    href={{
-                                      pathname: '/dashboard/budget',
-                                      query: {
-                                        step: getCategoryStep(category.id),
-                                        prefill: 'true',
-                                        budget: budgetData.totalBudget,
-                                        guestCount: budgetData.guestCount,
-                                        city: budgetData.location.city,
-                                        state: budgetData.location.state,
-                                        isDestination: budgetData.location.country !== 'United States',
-                                        weddingDate: budgetData.location.weddingDate,
-                                        returnTo: '/budget-breakdown'
-                                      }
-                                    }}
-                                  >
-                                    <span className="mr-2">✏️</span>
-                                    Adjust {category.name} Preferences
-                                  </Link>
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -493,19 +709,100 @@ export default function BudgetBreakdownPage() {
             ))}
           </div>
         </div>
+
+        {/* Make Changes Section */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-sage-900">Make Changes to Your Budget</h2>
+              <p className="text-sage-600">Choose how you'd like to modify your budget:</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-sage-600"></div>
+                <span className="text-sm text-sage-600">UI Controls</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-sage-400"></div>
+                <span className="text-sm text-sage-600">AI Assistant</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-sage-200/50 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
+                <div className="flex items-center gap-2">
+                  <Settings2 className="h-5 w-5 text-sage-700" />
+                  <CardTitle className="text-sage-900">Using the UI</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ul className="space-y-3 text-sage-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-sage-500 mt-1">•</span>
+                    Click on any category to see detailed breakdown
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-sage-500 mt-1">•</span>
+                    Update preferences to adjust costs
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-sage-500 mt-1">•</span>
+                    See how your choices affect the budget
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-sage-500 mt-1">•</span>
+                    Track actual spending vs estimates
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="border-sage-200/50 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-sage-700" />
+                  <CardTitle className="text-sage-900">Using the AI Assistant</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ul className="space-y-3 text-sage-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-sage-500 mt-1">•</span>
+                    Ask questions about your budget in natural language
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-sage-500 mt-1">•</span>
+                    Get personalized suggestions for optimization
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-sage-500 mt-1">•</span>
+                    Request changes to multiple categories at once
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-sage-500 mt-1">•</span>
+                    Compare different options and their costs
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <BudgetAssistant 
+          budgetData={budgetData} 
+          onUpdateBudget={(updates) => {
+            const updatedBudgetData = {
+              ...budgetData,
+              ...updates,
+              lastUpdated: new Date().toISOString()
+            };
+            storage.setUserData(updatedBudgetData);
+            setBudgetData(updatedBudgetData);
+          }}
+        />
       </div>
-      <BudgetAssistant 
-        budgetData={budgetData} 
-        onUpdateBudget={(updates) => {
-          const updatedBudgetData = {
-            ...budgetData,
-            ...updates,
-            lastUpdated: new Date().toISOString()
-          };
-          storage.setUserData(updatedBudgetData);
-          setBudgetData(updatedBudgetData);
-        }}
-      />
     </div>
   );
 }
