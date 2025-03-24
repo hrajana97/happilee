@@ -17,19 +17,6 @@ interface BudgetAssistantProps {
   onUpdateBudget?: (updates: Partial<BudgetData>) => void;
 }
 
-// Add typing indicator component
-function TypingIndicator() {
-  return (
-    <div className="flex items-center space-x-2 p-4 bg-sage-50 rounded-lg max-w-[80%]">
-      <div className="flex space-x-1">
-        <div className="w-2 h-2 bg-sage-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-2 h-2 bg-sage-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-2 h-2 bg-sage-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-      </div>
-    </div>
-  );
-}
-
 export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -49,7 +36,7 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,22 +53,6 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
     setIsLoading(true);
 
     try {
-      // Optimize the payload by only sending necessary data
-      const relevantBudgetData = {
-        totalBudget: budgetData.totalBudget,
-        guestCount: budgetData.guestCount,
-        location: budgetData.location,
-        categories: budgetData.categories.map(cat => ({
-          id: cat.id,
-          name: cat.name,
-          estimatedCost: cat.estimatedCost,
-          percentage: cat.percentage
-        }))
-      };
-
-      // Only send the last 5 messages for context
-      const recentMessages = messages.slice(-5);
-
       const response = await fetch('/api/budget-assistant', {
         method: 'POST',
         headers: {
@@ -89,8 +60,8 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
         },
         body: JSON.stringify({
           message: input,
-          budgetData: relevantBudgetData,
-          conversationHistory: recentMessages
+          budgetData,
+          conversationHistory: messages
         }),
       });
 
@@ -166,11 +137,6 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
                   </div>
                 </div>
               ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <TypingIndicator />
-                </div>
-              )}
               <div ref={messagesEndRef} />
             </div>
           </ScrollArea>

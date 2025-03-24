@@ -19,6 +19,20 @@ interface BudgetAssistantProps {
   onUpdateBudget?: (updates: Partial<BudgetData>) => void;
 }
 
+function TypingIndicator() {
+  return (
+    <div className="flex justify-start">
+      <div className="bg-sage-50 rounded-lg p-3 max-w-[80%]">
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-sage-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 rounded-full bg-sage-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 rounded-full bg-sage-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -53,6 +67,10 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
     setInput('');
     setIsLoading(true);
 
+    // Create an AbortController for the timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     try {
       const response = await fetch('/api/budget-assistant', {
         method: 'POST',
@@ -64,9 +82,14 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
           budgetData,
           conversationHistory: messages
         }),
+        signal: controller.signal
       });
 
-      if (!response.ok) throw new Error('Failed to get response');
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
 
       const data = await response.json();
       
@@ -80,9 +103,17 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
         onUpdateBudget(data.budgetUpdates);
       }
     } catch (error) {
+      let errorMessage = "I'm sorry, I encountered an error. Please try again.";
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "I apologize, but it's taking longer than expected to process your request. Please try asking a simpler question or break it down into smaller parts.";
+        }
+      }
+      
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "I'm sorry, I encountered an error. Please try again.",
+        content: errorMessage,
         timestamp: new Date()
       }]);
     } finally {
@@ -150,6 +181,7 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
                 </div>
               </div>
             ))}
+            {isLoading && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
@@ -158,12 +190,19 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a question or request changes..."
+            placeholder={isLoading ? "Generating response..." : "Ask a question or request changes..."}
             disabled={isLoading}
             className="flex-1"
           />
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <Button type="submit" disabled={isLoading} className="relative">
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="sr-only">Generating response...</span>
+              </div>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </form>
       </div>
