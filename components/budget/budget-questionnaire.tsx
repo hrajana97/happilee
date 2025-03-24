@@ -195,9 +195,10 @@ export default function BudgetSurvey() {
   useEffect(() => {
     const userData = storage.getUserData();
     const prefill = searchParams.get('prefill') === 'true';
+    const fromBudget = searchParams.get('fromBudget') === 'true';
+    const fromSummary = searchParams.get('fromSummary') === 'true';
     const finalStep = searchParams.get('step') === 'final';
     const stepParam = searchParams.get('step') as StepKey | null;
-    const existingPreferences = userData?.preferences || {};
 
     // Helper function to cast preferences to correct types
     const castPreferences = (prefs: any): Partial<BudgetFormData> => {
@@ -213,36 +214,27 @@ export default function BudgetSurvey() {
       return result;
     };
 
-    if (prefill) {
-      const budgetParam = searchParams.get('budget');
-      setBudgetData(prevData => ({
-        ...prevData,
-        totalBudget: budgetParam ? formatCurrency(budgetParam) : '',
-        guestCount: searchParams.get('guestCount') || '',
-        weddingDate: searchParams.get('weddingDate') || '',
-        isDestination: searchParams.get('isDestination') === 'true',
-        city: searchParams.get('city') || '',
-        state: searchParams.get('state') || '',
-        country: searchParams.get('isDestination') === 'true' ? '' : 'United States',
-        // Prefill all existing preferences with proper type casting
-        ...castPreferences(existingPreferences),
-      }));
-
-      if (finalStep) {
-        setStep(7);
-      }
-    } else if (userData) {
+    // Always prefill basic details from userData if available
+    if (userData) {
       setBudgetData(prevData => ({
         ...prevData,
         totalBudget: userData.budget ? formatCurrency(userData.budget) : '',
         guestCount: userData.guestCount ? userData.guestCount.toString() : '',
         weddingDate: userData.weddingDate ? userData.weddingDate.split('T')[0] : '',
-        // Prefill all existing preferences with proper type casting
-        ...castPreferences(existingPreferences),
       }));
     }
 
-    if (stepParam && stepParam in STEP_MAP) {
+    // If coming from budget breakdown or summary, also prefill preferences
+    if ((fromBudget || fromSummary) && userData?.preferences) {
+      setBudgetData(prevData => ({
+        ...prevData,
+        ...castPreferences(userData.preferences),
+      }));
+    }
+
+    if (finalStep) {
+      setStep(7);
+    } else if (stepParam && stepParam in STEP_MAP) {
       setStep(STEP_MAP[stepParam]);
     }
   }, [searchParams]);
