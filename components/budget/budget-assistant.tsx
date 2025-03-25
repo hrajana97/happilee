@@ -54,6 +54,51 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
     scrollToBottom();
   }, [messages]);
 
+  const handleBudgetUpdate = (updates: Partial<BudgetData>) => {
+    if (!updates || !onUpdateBudget) return;
+
+    // If this is just a verification response, no need to update the budget
+    if (!updates.calculatedBudget && !updates.totalBudget) return;
+
+    // Ensure we're working with the latest budget data
+    const updatedBudget = {
+      ...budgetData,
+      // Update total budget if changed
+      totalBudget: updates.totalBudget || budgetData.totalBudget,
+      budget: updates.budget || budgetData.budget,
+      // Preserve and update the calculatedBudget structure
+      calculatedBudget: {
+        ...budgetData.calculatedBudget,
+        ...updates.calculatedBudget,
+        // Ensure categories are properly updated with all required fields
+        categories: updates.calculatedBudget?.categories?.map(category => ({
+          id: category.id,
+          name: category.name,
+          estimatedCost: category.estimatedCost,
+          actualCost: category.actualCost || 0,
+          remaining: category.remaining || category.estimatedCost,
+          percentage: category.percentage,
+          rationale: category.rationale || '',
+          notes: category.notes || '',
+          description: category.description || ''
+        })) || budgetData.calculatedBudget?.categories || []
+      },
+      // Update the lastUpdated timestamp
+      lastUpdated: new Date().toISOString()
+    };
+
+    // Call the update callback with the complete budget data
+    onUpdateBudget(updatedBudget);
+
+    // Force a re-render of the parent component after a short delay
+    setTimeout(() => {
+      onUpdateBudget({
+        ...updatedBudget,
+        lastUpdated: new Date().toISOString()
+      });
+    }, 100);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -105,8 +150,8 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
         timestamp: new Date()
       }]);
 
-      if (data.budgetUpdates && onUpdateBudget) {
-        onUpdateBudget(data.budgetUpdates);
+      if (data.budgetUpdates) {
+        handleBudgetUpdate(data.budgetUpdates);
       }
     } catch (error) {
       let errorMessage = "I'm sorry, I encountered an error. Please try again.";
@@ -178,16 +223,6 @@ export function BudgetAssistant({ budgetData, onUpdateBudget }: BudgetAssistantP
       </div>
 
       <div className="p-4">
-        <div className="bg-sage-50/50 rounded-lg p-4 mb-4">
-          <h4 className="font-medium text-sage-900 mb-2">How to Use the Budget Assistant</h4>
-          <ul className="space-y-2 text-sm text-sage-600">
-            <li>• Ask questions about your budget breakdown</li>
-            <li>• Request changes to category allocations</li>
-            <li>• Get money-saving suggestions</li>
-            <li>• Compare different options and their costs</li>
-          </ul>
-        </div>
-
         <ScrollArea className="h-[300px] rounded-md border bg-white p-4 mb-4">
           <div className="space-y-4">
             {messages.map((message, index) => (

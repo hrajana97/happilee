@@ -116,7 +116,12 @@ const CEREMONY_MUSIC_OPTIONS = ["Live Music", "No Live - Will Use Recorded Track
 const RECEPTION_MUSIC_OPTIONS = ["DJ", "Band", "Both DJ & Band", "No Live Music (Playlist)"] as const;
 const BEAUTY_STYLE_OPTIONS = ["DIY", "Bride Only", "Bride and Party"] as const;
 const VENUE_TYPE_OPTIONS = ["paid", "church", "temple", "family-property", "other"] as const;
-const TRANSPORTATION_TYPE_OPTIONS = ["None", "Guest Shuttle Service", "Wedding Party Transportation", "Both"] as const;
+const TRANSPORTATION_TYPE_OPTIONS = [
+  "None",
+  "Guest Shuttle Service",
+  "Wedding Party Transportation",
+  "Both"
+] as const;
 const STATIONERY_TYPE_OPTIONS = ["Digital Only", "Printed Only", "Both Digital & Print"] as const;
 const DRESS_TYPE_OPTIONS = ["Custom", "Off Rack"] as const;
 const WEDDING_PARTY_SIZES = ["None (Couple Only)", "Small (1-4 people)", "Medium (5-8 people)", "Large (9+ people)"] as const;
@@ -140,6 +145,11 @@ const STEP_MAP: Record<StepKey, number> = {
   'favors': 9,
   'planning': 11,
   'final': 11
+};
+
+// Helper function to map transportation types
+const mapTransportationType = (type: typeof TRANSPORTATION_TYPE_OPTIONS[number]): BudgetPreferences['transportationType'] => {
+  return type;
 };
 
 export default function BudgetSurvey() {
@@ -184,14 +194,14 @@ export default function BudgetSurvey() {
     photoVideo: '' as typeof PHOTO_VIDEO_OPTIONS[number],
     coverage: '' as typeof COVERAGE_OPTIONS[number],
     coverageHours: '',
-    ceremonyMusic: 'None' as typeof CEREMONY_MUSIC_OPTIONS[number],
-    receptionMusic: 'None' as typeof RECEPTION_MUSIC_OPTIONS[number],
+    ceremonyMusic: '' as typeof CEREMONY_MUSIC_OPTIONS[number],
+    receptionMusic: '' as typeof RECEPTION_MUSIC_OPTIONS[number],
     musicHours: '',
     weddingPartySize: '' as typeof WEDDING_PARTY_SIZES[number],
     ceremonyDecorLevel: '' as typeof CEREMONY_DECOR_LEVELS[number],
     additionalDecorAreas: '' as typeof ADDITIONAL_DECOR_AREAS[number],
-    saveTheDate: 'none' as 'digital' | 'printed' | 'none',
-    invitationType: 'digital' as 'digital' | 'printed' | 'both',
+    saveTheDate: '' as 'digital' | 'printed' | 'none',
+    invitationType: '' as 'digital' | 'printed' | 'both',
   });
 
   useEffect(() => {
@@ -281,37 +291,40 @@ export default function BudgetSurvey() {
         priorities.push("entertainment");
       }
 
-      // Create comprehensive preferences object
+      // Create comprehensive preferences object with proper type casting
       const preferences: BudgetPreferences = {
-        cateringStyle: budgetData.cateringStyle,
-        barService: budgetData.barType,
-        photoVideo: budgetData.photoVideo,
-        coverage: budgetData.coverage,
-        floralStyle: budgetData.floralStyle,
-        musicChoice: budgetData.receptionMusic,
-        beautyStyle: budgetData.beautyStyle,
-        transportationType: budgetData.transportationType,
-        transportationGuestCount: parseInt(budgetData.transportationGuestCount) || 0,
-        transportationHours: budgetData.transportationHours,
-        makeupFor: budgetData.makeupFor,
-        makeupServices: budgetData.makeupServices,
-        weddingPartySize: budgetData.weddingPartySize,
-        ceremonyDecorLevel: budgetData.ceremonyDecorLevel,
-        additionalDecorAreas: budgetData.additionalDecorAreas,
-        stationeryType: budgetData.stationeryType,
-        saveTheDate: budgetData.saveTheDate,
-        invitationType: budgetData.invitationType,
-        bridesmaidCount: budgetData.bridesmaidCount,
-        includeFavors: budgetData.includeFavors,
-        favorCostPerPerson: budgetData.favorCostPerPerson,
-        dressBudget: budgetData.dressBudget,
-        suitBudget: budgetData.suitBudget,
-        accessoriesBudget: budgetData.accessoriesBudget,
-        needAlterations: budgetData.needAlterations,
-        needReceptionDress: budgetData.needReceptionDress,
-        receptionDressBudget: budgetData.receptionDressBudget,
-        suitCount: budgetData.suitCount
+        cateringStyle: budgetData.cateringStyle || undefined,
+        barService: budgetData.barType || undefined,
+        photoVideo: budgetData.photoVideo || undefined,
+        coverage: budgetData.coverage || undefined,
+        floralStyle: budgetData.floralStyle || undefined,
+        musicChoice: budgetData.receptionMusic || undefined,
+        beautyStyle: budgetData.beautyStyle || undefined,
+        transportationType: mapTransportationType(budgetData.transportationType),
+        transportationGuestCount: String(budgetData.transportationGuestCount || '0'),
+        transportationHours: budgetData.transportationHours || '0',
+        makeupFor: budgetData.makeupFor || [],
+        makeupServices: budgetData.makeupServices || [],
+        weddingPartySize: budgetData.weddingPartySize || undefined,
+        ceremonyDecorLevel: budgetData.ceremonyDecorLevel || undefined,
+        additionalDecorAreas: budgetData.additionalDecorAreas || undefined,
+        stationeryType: budgetData.stationeryType || undefined,
+        saveTheDate: budgetData.saveTheDate || undefined,
+        invitationType: budgetData.invitationType || undefined,
+        bridesmaidCount: budgetData.bridesmaidCount || '0',
+        includeFavors: budgetData.includeFavors || false,
+        favorCostPerPerson: budgetData.favorCostPerPerson || '0',
+        dressBudget: budgetData.dressBudget || '0',
+        suitBudget: budgetData.suitBudget || '0',
+        accessoriesBudget: budgetData.accessoriesBudget || '0',
+        needAlterations: budgetData.needAlterations || false,
+        needReceptionDress: budgetData.needReceptionDress || false,
+        receptionDressBudget: budgetData.receptionDressBudget || '0',
+        suitCount: budgetData.suitCount || '0'
       };
+
+      // Log preferences for debugging
+      console.log('Calculating budget with preferences:', preferences);
 
       // Calculate the budget with preferences
       const result = budgetStorage.calculateBudget(
@@ -326,6 +339,8 @@ export default function BudgetSurvey() {
         priorities,
         preferences
       );
+
+      console.log('Budget calculation result:', result);
 
       // Store the result using the correct type from types/budget
       storage.setUserData({
@@ -417,8 +432,8 @@ export default function BudgetSurvey() {
         floralStyle: budgetData.floralStyle,
         musicChoice: budgetData.receptionMusic,
         beautyStyle: budgetData.beautyStyle,
-        transportationType: budgetData.transportationType,
-        transportationGuestCount: parseInt(budgetData.transportationGuestCount) || 0,
+        transportationType: mapTransportationType(budgetData.transportationType),
+        transportationGuestCount: String(parseInt(budgetData.transportationGuestCount) || 0),
         transportationHours: budgetData.transportationHours,
         makeupFor: budgetData.makeupFor,
         makeupServices: budgetData.makeupServices,
@@ -1116,6 +1131,23 @@ export default function BudgetSurvey() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label>Stationery Type</Label>
+                <Select
+                  value={budgetData.stationeryType}
+                  onValueChange={(value: typeof STATIONERY_TYPE_OPTIONS[number]) => 
+                    setBudgetData(prev => ({ ...prev, stationeryType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select stationery type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATIONERY_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
                 <Label>Save the Dates</Label>
                 <Select
                   value={budgetData.saveTheDate}
@@ -1124,7 +1156,7 @@ export default function BudgetSurvey() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select option" />
+                    <SelectValue placeholder="Select save the date option" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="digital">Digital ($100-300)</SelectItem>
@@ -1141,12 +1173,12 @@ export default function BudgetSurvey() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select option" />
+                    <SelectValue placeholder="Select invitation type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="digital">Digital ($200-500)</SelectItem>
-                    <SelectItem value="printed">Printed ($800-2000+)</SelectItem>
-                    <SelectItem value="both">Both Digital & Print ($1000-2500+)</SelectItem>
+                    <SelectItem value="digital">Digital Suite ($200-500)</SelectItem>
+                    <SelectItem value="printed">Printed Suite ($800-2,000)</SelectItem>
+                    <SelectItem value="both">Combined Digital & Print ($1,000-2,500)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

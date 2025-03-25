@@ -1,6 +1,6 @@
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
-import type { BudgetData, BudgetPreferences } from '@/types/budget';
+import type { BudgetData, BudgetPreferences, BudgetCategory } from '@/types/budget';
 import { getOpenAIKey } from '@/utils/aws-params';
 import budgetStorage from '@/lib/budget-storage';
 
@@ -99,50 +99,157 @@ function parsePreferenceChanges(message: string): Partial<BudgetPreferences> {
   return changes;
 }
 
+// Helper function to get all categories and their totals
+function getCategoryTotals(categories: BudgetCategory[]) {
+  const total = categories.reduce((sum, cat) => sum + cat.estimatedCost, 0);
+  const breakdown = categories.map(cat => ({
+    name: cat.name,
+    amount: cat.estimatedCost,
+    percentage: Math.round((cat.estimatedCost / total) * 100)
+  }));
+  return { total, breakdown };
+}
+
+// Helper function to parse budget changes from the message
+function parseBudgetChanges(message: string, budgetData: BudgetData): Partial<BudgetData> {
+  const changes: Partial<BudgetData> = {};
+  const lowerMessage = message.toLowerCase();
+
+  // Check if we need to verify category totals
+  if (lowerMessage.includes('add up') || lowerMessage.includes('total') || lowerMessage.includes('verify')) {
+    const categories = budgetData.calculatedBudget?.categories || [];
+    const { total, breakdown } = getCategoryTotals(categories);
+    
+    // Create a message showing the breakdown
+    const breakdownMessage = `Current budget breakdown:\n` +
+      breakdown.map(cat => `• ${cat.name}: $${cat.amount.toLocaleString()} (${cat.percentage}%)`).join('\n') +
+      `\n\nTotal from all categories: $${total.toLocaleString()}`;
+    
+    changes.verificationMessage = breakdownMessage;
+    return changes;
+  }
+
+  // Extract amount and category from message
+  const amountMatch = message.match(/\$?(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+  const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0;
+
+  // Find the category being modified
+  const categories = [...(budgetData.calculatedBudget?.categories || [])];
+  
+  for (const category of categories) {
+    const categoryName = category.name.toLowerCase();
+    const categoryId = category.id.toLowerCase();
+    
+    // Check both name and ID to ensure we catch all variations
+    if (lowerMessage.includes(categoryName) || lowerMessage.includes(categoryId)) {
+      const categoryIndex = categories.findIndex(c => c.id === category.id);
+      if (categoryIndex !== -1) {
+        const originalAmount = categories[categoryIndex].estimatedCost;
+        let newAmount = originalAmount;
+        
+        if (lowerMessage.includes('increase') || lowerMessage.includes('add')) {
+          newAmount = originalAmount + amount;
+        } else if (lowerMessage.includes('decrease') || lowerMessage.includes('reduce')) {
+          newAmount = Math.max(0, originalAmount - amount);
+        } else if (lowerMessage.includes('set') || lowerMessage.includes('change to')) {
+          newAmount = amount;
+        }
+
+        // Update the category
+        categories[categoryIndex] = {
+          ...categories[categoryIndex],
+          estimatedCost: newAmount,
+          remaining: newAmount,
+          actualCost: categories[categoryIndex].actualCost || 0
+        };
+        
+        // Recalculate percentages for all categories
+        const { total, breakdown } = getCategoryTotals(categories);
+        categories.forEach((cat, index) => {
+          cat.percentage = breakdown[index].percentage;
+        });
+
+        // Create a complete budget update
+        changes.totalBudget = total;
+        changes.budget = total;
+        changes.calculatedBudget = {
+          ...budgetData.calculatedBudget,
+          categories: categories,
+          rationale: {
+            ...budgetData.calculatedBudget.rationale,
+            totalBudget: total.toString(),
+            notes: [
+              ...budgetData.calculatedBudget.rationale.notes,
+              `Updated ${category.name} budget from $${originalAmount} to $${newAmount}`
+            ]
+          }
+        };
+        
+        break;
+      }
+    }
+  }
+
+  return changes;
+}
+
 export async function POST(request: Request) {
   try {
     const { message, budgetData, conversationHistory } = await request.json();
     const openai = await getOpenAIClient();
 
+    // Parse budget changes first
+    const budgetChanges = parseBudgetChanges(message, budgetData);
+    
+    // If this was a verification request, return the breakdown
+    if (budgetChanges.verificationMessage) {
+      return NextResponse.json({
+        message: budgetChanges.verificationMessage,
+        budgetUpdates: null
+      });
+    }
+
+    const updatedBudgetData = {
+      ...budgetData,
+      ...budgetChanges
+    };
+
+    // Find the affected category for the response
+    let categoryInfo = null;
+    if (budgetChanges.calculatedBudget?.categories) {
+      const lowerMessage = message.toLowerCase();
+      categoryInfo = budgetChanges.calculatedBudget.categories.find(cat => 
+        lowerMessage.includes(cat.name.toLowerCase()) || lowerMessage.includes(cat.id.toLowerCase())
+      );
+    }
+
     const systemPrompt = `You are a concise and helpful wedding budget assistant. You have access to the user's wedding budget data and can help them understand their budget, make adjustments, and provide recommendations.
 
 Current Budget Information:
-- Total Budget: ${budgetData.totalBudget}
-- Guest Count: ${budgetData.guestCount}
-- Location: ${budgetData.location.city}, ${budgetData.location.state}
-- Wedding Date: ${budgetData.location.weddingDate}
+- Total Budget: ${updatedBudgetData.totalBudget}
+- Guest Count: ${updatedBudgetData.guestCount}
+- Location: ${updatedBudgetData.location.city}, ${updatedBudgetData.location.state}
+- Wedding Date: ${updatedBudgetData.location.weddingDate}
 
-Response Guidelines:
-1. Keep responses under 3 short paragraphs
-2. Use bullet points for lists
-3. Format numbers as currency when discussing costs
-4. Break up text with line breaks for readability
-5. Be direct and practical
-6. If suggesting cost savings, list specific amounts or percentages
-7. When making changes, explain the impact on the budget
-8. For preference changes, explain:
-   • The cost difference
-   • Any trade-offs or considerations
-   • How it affects the overall budget
+${categoryInfo ? `Category Information:
+- Name: ${categoryInfo.name}
+- Current Budget: $${categoryInfo.estimatedCost}
+- Percentage of Total: ${categoryInfo.percentage}%` : ''}
 
-Example responses:
+When confirming budget changes, be specific and clear:
+1. Show the original amount
+2. Show the new amount
+3. Show the difference
+4. Explain any impacts on other categories
+5. Format all amounts as currency
 
-For preference changes:
-"I've updated your floral style to artificial flowers. This change will:
-• Save approximately 40% on your floral budget
-• Provide more durability and flexibility in planning
-• Allow for more elaborate arrangements at a lower cost
+Example response for budget changes:
+"I've updated your catering budget:
+• Original budget: $X
+• New budget: $Y
+• Change: +$Z
 
-Your floral budget has been adjusted from $X to $Y."
-
-For general questions:
-"Your catering budget is $X for Y guests.
-
-Here are some ways to optimize:
-• Option 1: Save $X by [specific action]
-• Option 2: Reduce costs by X% by [specific action]
-
-Remember: Focus on high-impact changes first."`;
+This represents N% of your total budget."`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
@@ -160,37 +267,9 @@ Remember: Focus on high-impact changes first."`;
       frequency_penalty: 0.3
     });
 
-    const assistantMessage = response.choices[0].message.content;
-    
-    // Parse any preference changes from the message
-    const preferenceChanges = parsePreferenceChanges(message);
-    
-    // If there are preference changes, recalculate the budget
-    let budgetUpdates: Partial<BudgetData> = {};
-    if (Object.keys(preferenceChanges).length > 0) {
-      const updatedPreferences: BudgetPreferences = {
-        ...(budgetData.preferences || {}),
-        ...preferenceChanges
-      };
-
-      const calculatedBudget = budgetStorage.calculateBudget(
-        budgetData.guestCount,
-        budgetData.location,
-        budgetData.priorities,
-        updatedPreferences
-      );
-
-      budgetUpdates = {
-        preferences: updatedPreferences,
-        calculatedBudget,
-        categories: calculatedBudget.categories,
-        rationale: calculatedBudget.rationale
-      };
-    }
-
     return NextResponse.json({
-      message: assistantMessage,
-      budgetUpdates
+      message: response.choices[0].message.content,
+      budgetUpdates: budgetChanges
     });
 
   } catch (error) {

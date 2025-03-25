@@ -94,6 +94,7 @@ export default function BudgetBreakdownPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showAssistantIndicator, setShowAssistantIndicator] = useState(true);
 
   useEffect(() => {
     try {
@@ -282,6 +283,45 @@ export default function BudgetBreakdownPage() {
     }));
   };
 
+  const handleBudgetUpdate = (updates: Partial<BudgetData>) => {
+    const updatedBudgetData = {
+      ...budgetData,
+      ...updates,
+      calculatedBudget: {
+        ...budgetData.calculatedBudget,
+        ...updates.calculatedBudget,
+        categories: updates.calculatedBudget?.categories || budgetData.calculatedBudget?.categories || [],
+        rationale: {
+          ...budgetData.calculatedBudget?.rationale,
+          ...updates.calculatedBudget?.rationale,
+          notes: [
+            ...(budgetData.calculatedBudget?.rationale?.notes || []),
+            ...(updates.calculatedBudget?.rationale?.notes || [])
+          ]
+        }
+      },
+      lastUpdated: new Date().toISOString()
+    };
+
+    // Update local state
+    setBudgetData(updatedBudgetData);
+    
+    // Persist to storage
+    try {
+      storage.setUserData(updatedBudgetData);
+    } catch (error) {
+      console.error('Error saving budget updates:', error);
+    }
+
+    // Force a re-render after a short delay to ensure UI updates
+    setTimeout(() => {
+      setBudgetData({
+        ...updatedBudgetData,
+        lastUpdated: new Date().toISOString()
+      });
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-sage-100/80 via-[#E8F3E9] to-white p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
@@ -356,7 +396,7 @@ export default function BudgetBreakdownPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="bg-white rounded-lg p-4 border">
                 <h3 className="text-sage-600 text-sm font-medium">Total Budget</h3>
                 <p className="text-2xl font-semibold">{formatCurrency(budgetData.totalBudget)}</p>
@@ -373,6 +413,37 @@ export default function BudgetBreakdownPage() {
                 <p className="text-xl font-medium">
                   {budgetData.location.city ? `${budgetData.location.city}, ${budgetData.location.state}` : 'Location not set'}
                 </p>
+              </div>
+            </div>
+
+            <div className="bg-sage-50/50 rounded-lg p-5 border border-sage-100">
+              <h4 className="text-sm font-semibold text-sage-700 mb-3 flex items-center gap-2">
+                <span className="inline-block">📍</span>
+                Location & Timing Impact on Your Budget
+              </h4>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-sage-600">Location Factor</span>
+                    <span className="font-medium text-sage-900">{budgetData.calculatedBudget.rationale.locationFactor}x</span>
+                  </div>
+                  {budgetData.calculatedBudget.rationale.locationFactor > 1.2 && (
+                    <p className="text-sm text-sage-500 bg-white/80 p-2 rounded">
+                      Wedding costs are typically higher in {budgetData.location.city}. This affects venue, catering, and vendor rates.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-sage-600">Seasonal Factor</span>
+                    <span className="font-medium text-sage-900">{budgetData.calculatedBudget.rationale.seasonalFactor}x</span>
+                  </div>
+                  {budgetData.calculatedBudget.rationale.seasonalFactor > 1 && (
+                    <p className="text-sm text-sage-500 bg-white/80 p-2 rounded">
+                      Peak season pricing applies for your date, particularly affecting venue and service costs.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -405,6 +476,11 @@ export default function BudgetBreakdownPage() {
                   </div>
                   <div className="col-span-4 font-medium">
                     {formatCurrency(category.estimatedCost)}
+                    {category.id === 'catering' && (
+                      <span className="text-sm text-sage-600 ml-2">
+                        ({formatCurrency(Math.round(category.estimatedCost / budgetData.guestCount))} per person)
+                      </span>
+                    )}
                   </div>
                   <div className="col-span-3">
                     {formatPercentage(category.percentage)}
@@ -489,9 +565,9 @@ export default function BudgetBreakdownPage() {
                                             if (!isTransportationType(choice)) return 'Cost varies by service type';
                                             
                                             switch(choice) {
-                                              case 'Guest Shuttle Service': return 'Average cost $1,500-3,000 for standard shuttle service';
-                                              case 'Wedding Party Transportation': return 'Average cost $800-1,500 for wedding party vehicles';
-                                              case 'Both': return 'Combined services $2,300-4,500';
+                                              case 'Guest Shuttle Service': return 'Average cost $500-800 per bus (seats 30-50 guests)';
+                                              case 'Wedding Party Transportation': return 'Average cost $400-800 for luxury vehicles';
+                                              case 'Both': return 'Combined services $900-1600';
                                               case 'None': return 'No transportation costs';
                                               default: return 'Cost varies by service type';
                                             }
@@ -739,39 +815,6 @@ export default function BudgetBreakdownPage() {
                               </div>
                             </div>
                           </div>
-
-                          {['venue', 'catering', 'transportation'].includes(category.id) && (
-                            <div className="bg-white rounded-lg p-5 shadow-sm">
-                              <h4 className="text-sm font-semibold text-sage-700 mb-3 flex items-center gap-2">
-                                <span className="inline-block">📍</span>
-                                Location & Timing Impact
-                              </h4>
-                              <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-sage-600">Location Factor</span>
-                                    <span className="font-medium text-sage-900">{budgetData.calculatedBudget.rationale.locationFactor}x</span>
-                                  </div>
-                                  {budgetData.calculatedBudget.rationale.locationFactor > 1.2 && (
-                                    <p className="text-sm text-sage-500 bg-sage-50 p-2 rounded">
-                                      {category.name} costs are typically higher in {budgetData.location.city}
-                                    </p>
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-sage-600">Seasonal Factor</span>
-                                    <span className="font-medium text-sage-900">{budgetData.calculatedBudget.rationale.seasonalFactor}x</span>
-                                  </div>
-                                  {budgetData.calculatedBudget.rationale.seasonalFactor > 1 && (
-                                    <p className="text-sm text-sage-500 bg-sage-50 p-2 rounded">
-                                      Peak season pricing applies for your date
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -782,98 +825,45 @@ export default function BudgetBreakdownPage() {
           </div>
         </div>
 
-        {/* Make Changes Section */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-sage-900">Make Changes to Your Budget</h2>
-              <p className="text-sage-600">Choose how you'd like to modify your budget:</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-sage-600"></div>
-                <span className="text-sm text-sage-600">UI Controls</span>
+        <div className="fixed bottom-24 right-6 flex flex-col items-end gap-2">
+          {showAssistantIndicator && (
+            <div className="bg-white rounded-lg shadow-lg p-4 border border-sage-200 max-w-xs relative">
+              <button 
+                onClick={() => setShowAssistantIndicator(false)}
+                className="absolute top-2 right-2 text-sage-400 hover:text-sage-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+              <div className="flex items-center gap-2 mb-2">
+                <Bot className="h-5 w-5 text-sage-700" />
+                <h3 className="font-semibold text-sage-900">Budget Assistant</h3>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-sage-400"></div>
-                <span className="text-sm text-sage-600">AI Assistant</span>
-              </div>
+              <p className="text-sm text-sage-600">
+                Click the chat icon below to ask questions or make changes to your budget. I can help you:
+              </p>
+              <ul className="mt-2 space-y-1 text-sm text-sage-600">
+                <li className="flex items-start gap-2">
+                  <span className="text-sage-500 mt-1">•</span>
+                  Edit category amounts
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-sage-500 mt-1">•</span>
+                  Get cost-saving suggestions
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-sage-500 mt-1">•</span>
+                  Compare different options
+                </li>
+              </ul>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-sage-200/50 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
-                <div className="flex items-center gap-2">
-                  <Settings2 className="h-5 w-5 text-sage-700" />
-                  <CardTitle className="text-sage-900">Using the UI</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                <ul className="space-y-3 text-sage-600">
-                  <li className="flex items-start gap-2">
-                    <span className="text-sage-500 mt-1">•</span>
-                    Click on any category to see detailed breakdown
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-sage-500 mt-1">•</span>
-                    Update preferences to adjust costs
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-sage-500 mt-1">•</span>
-                    See how your choices affect the budget
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-sage-500 mt-1">•</span>
-                    Track actual spending vs estimates
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border-sage-200/50 shadow-lg">
-              <CardHeader className="bg-gradient-to-r from-sage-50 to-sage-100/50 border-b border-sage-200/50">
-                <div className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-sage-700" />
-                  <CardTitle className="text-sage-900">Using the AI Assistant</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                <ul className="space-y-3 text-sage-600">
-                  <li className="flex items-start gap-2">
-                    <span className="text-sage-500 mt-1">•</span>
-                    Ask questions about your budget in natural language
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-sage-500 mt-1">•</span>
-                    Get personalized suggestions for optimization
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-sage-500 mt-1">•</span>
-                    Request changes to multiple categories at once
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-sage-500 mt-1">•</span>
-                    Compare different options and their costs
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
+          )}
+          <BudgetAssistant 
+            budgetData={budgetData} 
+            onUpdateBudget={handleBudgetUpdate}
+          />
         </div>
-
-        <BudgetAssistant 
-          budgetData={budgetData} 
-          onUpdateBudget={(updates) => {
-            const updatedBudgetData = {
-              ...budgetData,
-              ...updates,
-              lastUpdated: new Date().toISOString()
-            };
-            storage.setUserData(updatedBudgetData);
-            setBudgetData(updatedBudgetData);
-          }}
-        />
       </div>
     </div>
   );

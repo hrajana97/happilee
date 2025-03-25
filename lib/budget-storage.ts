@@ -128,6 +128,7 @@ interface BudgetCategoryDetail {
     min: number
     max: number
   }
+  perPersonCost?: number  // Optional field for catering category
 }
 
 // Use BudgetCategoryDetail as our BudgetCategory type
@@ -141,9 +142,9 @@ const baseCosts: Record<CategoryType, CostRange> = {
     maximum: 30000
   },
   catering: {
-    typical: 150,    // Per person cost for NYC
-    minimum: 100,    // Minimum per person
-    maximum: 250     // Maximum per person
+    typical: 85,    // Base per person cost from 2023 data
+    minimum: 65,    // Minimum per person
+    maximum: 150    // Maximum per person for premium service
   },
   photography: {
     typical: 5000,
@@ -199,9 +200,9 @@ export type AdditionalDecorAreas = 'None' | 'Some' | 'Extensive'
 export type DiyElements = 'Yes, planning DIY elements' | 'No DIY elements planned' | 'Maybe, still deciding'
 export type MusicChoice = 'DJ' | 'Band' | 'Both DJ & Band' | 'No Live Music (Playlist)';
 export type BeautyStyle = 'DIY' | 'Bride Only' | 'Bride and Party';
-export type StationeryType = 'Digital Only' | 'Printed Only' | 'Both Digital & Print'
-export type SaveTheDateType = 'digital' | 'printed' | 'none'
-export type InvitationType = 'digital' | 'printed' | 'both'
+export type StationeryType = '' | 'Digital Only' | 'Printed Only' | 'Both Digital & Print';
+export type SaveTheDateType = '' | 'digital' | 'printed' | 'none';
+export type InvitationType = '' | 'digital' | 'printed' | 'both';
 export type TransportationType = 'None' | 'Guest Shuttle Service' | 'Wedding Party Transportation' | 'Both'
 export type PlannerType = 'Full Wedding Planner' | 'Month-of Coordinator' | 'Day-of Coordinator' | 'No Professional Help'
 export type EntertainmentType = 'live music' | 'no live - will use recorded track' | 'none'
@@ -261,10 +262,10 @@ export const serviceMultipliers: ServiceMultipliers = {
     'Food Stations (+15% over buffet)': 1.15
   },
   bar: {
-    'Open Bar': 1.5,
-    'Beer & Wine Only': 1.2,
-    'Cash Bar': 1.1,
-    'No Alcohol': 1.0
+    'Open Bar': 1.3,           // Reduced from 1.5x
+    'Beer & Wine Only': 1.15,  // Reduced from 1.3x
+    'Cash Bar': 1.0,
+    'No Alcohol': 0.8
   },
   photography: {
     'Both Photography & Videography': 1.5,
@@ -299,21 +300,25 @@ export const serviceMultipliers: ServiceMultipliers = {
     'Both': 1.5
   },
   stationery: {
+    '': 1.0,
     'Digital Only': 0.7,
     'Printed Only': 1.2,
     'Both Digital & Print': 1.5
   },
   favors: {
+    '': 1.0,
     'digital': 0.3,
     'printed': 0.8,
     'both': 1.0
   },
   saveTheDate: {
+    '': 1.0,
     'digital': 0.3,
     'printed': 0.8,
     'none': 0
   },
   invitation: {
+    '': 1.0,
     'digital': 0.3,
     'printed': 0.8,
     'both': 1.0
@@ -462,13 +467,13 @@ export const isTransportationType = (value: string): value is TransportationType
   ['None', 'Guest Shuttle Service', 'Wedding Party Transportation', 'Both'].includes(value)
 
 export const isStationeryType = (value: string): value is StationeryType =>
-  ['Digital Only', 'Printed Only', 'Both Digital & Print'].includes(value)
+  ['', 'Digital Only', 'Printed Only', 'Both Digital & Print'].includes(value)
 
 export const isSaveTheDateType = (value: string): value is SaveTheDateType =>
-  ['digital', 'printed', 'none'].includes(value)
+  ['', 'digital', 'printed', 'none'].includes(value)
 
 export const isInvitationType = (value: string): value is InvitationType =>
-  ['digital', 'printed', 'both'].includes(value)
+  ['', 'digital', 'printed', 'both'].includes(value)
 
 // Add category descriptions and cost breakdowns
 const categoryDescriptions: Record<CategoryType, {
@@ -523,8 +528,8 @@ const categoryDescriptions: Record<CategoryType, {
   },
   beauty: {
     description: "Professional hair and makeup services for the bride and optional wedding party coverage. Includes trial sessions, day-of services, and touch-up kits.",
-    costBreakdown: "Base cost varies by choice:\n- DIY: 30% of typical cost (includes professional consultation and product recommendations)\n- Bride Only: Standard rate (includes trial and day-of services)\n- Bride and Party: 180% of standard rate (scales with party size)",
-    scalingExplanation: "Final cost is determined by:\n1. Service choice (DIY/Bride Only/Full Party)\n2. Number of people needing services\n3. Whether trials are included\n4. Travel fees if applicable"
+    costBreakdown: "Base cost varies by service level:\n- DIY: $200-300 (includes consultation and products)\n- Bride Only: $300-500 (includes trial and day-of services)\n- Bride and Party: $800-1,500 (varies by party size)\n\nTypical costs per service:\n- Bridal Makeup: $140-200\n- Bridal Hair: $150-200\n- Bridesmaid Hair & Makeup: $185 total ($95 hair, $90 makeup)",
+    scalingExplanation: "Final cost is determined by:\n1. Service choice (DIY/Bride Only/Bride and Party)\n2. Number of people needing services\n3. Location factor (higher in major cities)\n4. Additional services (trials: $75-150, airbrush makeup: +$50-75, elaborate styles: +$50-100)"
   }
 }
 
@@ -675,8 +680,14 @@ const calculateBudgetRanges = (
     
     // Apply guest count scaling - FIXED to prevent double counting
     if (cat === 'catering') {
-      // Catering is already per-person in baseCosts, don't multiply by guest count here
-      totalMultiplier *= serviceMultipliersEffect[cat]
+      // For catering, we'll apply service multipliers but handle guest count separately
+      const cateringStyle = preferences.cateringStyle && isCateringStyle(preferences.cateringStyle)
+        ? serviceMultipliers.catering[preferences.cateringStyle]
+        : 1.0
+      const barService = preferences.barService && isBarService(preferences.barService)
+        ? serviceMultipliers.bar[preferences.barService]
+        : 1.0
+      totalMultiplier *= cateringStyle * barService
     } else if (['venue', 'rentals'].includes(cat)) {
       // Venue and rentals scale less than linearly
       totalMultiplier *= baseGuestFactor
@@ -723,18 +734,25 @@ const calculateBudgetRanges = (
     if (cat === 'favors' && preferences.includeFavors === false) return
     
     let baseCost = baseCosts[cat].typical
-    // For catering, multiply by guest count here
-    if (cat === 'catering') {
-      baseCost *= guestCount
-    }
     
-    const categoryTotal = baseCost * categoryMultipliers[cat]
-    initialTotalCost += categoryTotal
+    // For catering, calculate total cost based on per-person cost
+    let categoryTotal: number
+    if (cat === 'catering') {
+      const basePerPersonCost = baseCost * categoryMultipliers[cat]
+      categoryTotal = basePerPersonCost * guestCount
+      initialTotalCost += categoryTotal
+      
+      // Store the per-person cost in the multiplier for later reference
+      categoryMultipliers[cat] = basePerPersonCost / baseCost
+    } else {
+      categoryTotal = baseCost * categoryMultipliers[cat]
+      initialTotalCost += categoryTotal
+    }
     
     // Add minimum cost check
     const minCosts: Record<CategoryType, number> = {
       venue: 5000,
-      catering: guestCount * 75, // Minimum $75 per person
+      catering: guestCount * 65, // Minimum $65 per person
       photography: 2500,
       attire: 1000,
       floral: 2000,
@@ -748,7 +766,12 @@ const calculateBudgetRanges = (
     if (categoryTotal < minCosts[cat]) {
       const adjustment = minCosts[cat] - categoryTotal
       initialTotalCost += adjustment
-      categoryMultipliers[cat] *= (minCosts[cat] / categoryTotal)
+      if (cat === 'catering') {
+        // For catering, adjust the per-person multiplier
+        categoryMultipliers[cat] = (minCosts[cat] / guestCount) / baseCost
+      } else {
+        categoryMultipliers[cat] *= (minCosts[cat] / categoryTotal)
+      }
       adjustments.push(`${cat.charAt(0).toUpperCase() + cat.slice(1)} costs were adjusted up to meet minimum viable cost of ${formatCurrency(minCosts[cat])}`)
     }
   })
@@ -975,7 +998,8 @@ const budgetStorage = {
               notes: categoryInfo.costBreakdown,
               description: categoryInfo.scalingExplanation,
               budgetingTips: [],
-              priority
+              priority,
+              perPersonCost: totalAttireCost / guestCount
             }
           }
 
@@ -987,16 +1011,61 @@ const budgetStorage = {
             if (catName === 'attire') {
               return sum
             }
+            if (catName === 'catering') {
+              // For total calculation, just use the base per-person cost × guest count
+              return sum + (r.typical * guestCount)
+            }
             return sum + r.typical
           }, 0)
           
-          const percentage = ranges.typical / totalTypical
-          const estimatedCost = Math.round(suggestedBudget * percentage)
+          // Calculate total budget first
+          const totalBudget = suggestedBudget;
+
+          let estimatedCost;
+          let percentage;
+          if (name === 'catering') {
+            // Calculate catering cost with proper multipliers
+            const basePerPersonCost = ranges.typical;
+            const cateringStyle = preferences?.cateringStyle && isCateringStyle(preferences.cateringStyle)
+              ? serviceMultipliers.catering[preferences.cateringStyle]
+              : 1.0;
+            const barService = preferences?.barService && isBarService(preferences.barService)
+              ? serviceMultipliers.bar[preferences.barService]
+              : 1.0;
+            const perPersonCost = basePerPersonCost * cateringStyle * barService;
+            estimatedCost = Math.round(perPersonCost * guestCount);
+            percentage = (estimatedCost / totalBudget) * 100;
+
+            // Add per-person cost to the rationale
+            const rationale = `Total catering cost for ${guestCount} guests at ${formatCurrency(perPersonCost)} per person. ` +
+              `Includes ${preferences?.cateringStyle || 'standard'} service style and ${preferences?.barService || 'standard bar'} service.`;
+
+            return {
+              id: name.toLowerCase(),
+              name: name.charAt(0).toUpperCase() + name.slice(1),
+              percentage: Math.round(percentage),
+              estimatedCost,
+              actualCost: 0,
+              remaining: estimatedCost,
+              rationale,
+              notes: categoryInfo.costBreakdown,
+              description: categoryInfo.scalingExplanation,
+              budgetingTips: [],
+              priority,
+              perPersonCost
+            }
+          } else if (name === 'transportation' && preferences?.transportationType === 'None') {
+            estimatedCost = 0;
+            percentage = 0;
+          } else {
+            percentage = (ranges.typical / totalTypical) * 100;
+            estimatedCost = Math.round(suggestedBudget * (percentage / 100));
+          }
           
           return {
             id: name.toLowerCase(),
             name: name.charAt(0).toUpperCase() + name.slice(1),
-            percentage: Math.round(percentage * 100),
+            percentage: Math.round(percentage),
             estimatedCost,
             actualCost: 0,
             remaining: estimatedCost,
@@ -1004,7 +1073,8 @@ const budgetStorage = {
             notes: categoryInfo.costBreakdown,
             description: categoryInfo.scalingExplanation,
             budgetingTips: [],
-            priority
+            priority,
+            perPersonCost: estimatedCost / guestCount
           }
         })
 

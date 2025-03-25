@@ -21,22 +21,23 @@ export interface BudgetCategory {
   }>;
 }
 
-export interface BudgetPreferences {
-  musicChoice?: string;
-  musicHours?: number;
-  coverageHours?: number;
-  makeupFor?: string[];
-  makeupServices?: string[];
-  transportationType?: 'Standard sedan' | 'Luxury Sedan' | 'SUV' | 'Limo' | 'Party Bus';
-  transportationHours?: number;
-  cateringStyle?: string;
-  barService?: string;
-  photoVideo?: string;
-  coverage?: string;
-  floralStyle?: string;
-  diyElements?: string;
-  beautyCoverage?: string;
-  planningAssistance?: string;
+export type BudgetPreferences = {
+  cateringStyle?: string
+  barService?: string
+  photoVideo?: string
+  coverage?: string
+  floralStyle?: string
+  diyElements?: string
+  musicChoice?: string
+  beautyCoverage?: string
+  planningAssistance?: string
+  coverageHours?: string
+  musicHours?: string
+  makeupFor?: string[]
+  makeupServices?: string[]
+  transportationType?: 'None' | 'Guest Shuttle Service' | 'Wedding Party Transportation' | 'Both'
+  transportationHours?: string
+  transportationGuestCount?: string
 }
 
 export interface BudgetLocation {
