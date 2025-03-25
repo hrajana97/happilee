@@ -102,12 +102,12 @@ const locationCostFactors: Record<string, number> = {
 }
 
 // Define the category types
-type CategoryType = 'venue' | 'catering' | 'photography' | 'attire' | 'flowers' | 'entertainment' | 'stationery' | 'favors' | 'transportation' | 'hair_makeup'
+type CategoryType = 'venue' | 'catering' | 'photography' | 'attire' | 'floral' | 'music' | 'stationery' | 'favors' | 'transportation' | 'beauty'
 
 interface CostRange {
-  min: number
-  typical: number
-  max: number
+  typical: number;
+  minimum: number;
+  maximum: number;
 }
 
 // Use the new type name
@@ -135,52 +135,91 @@ type BudgetCategory = BudgetCategoryDetail
 
 // Update the baseCosts type
 const baseCosts: Record<CategoryType, CostRange> = {
-  venue: { min: 8000, typical: 10000, max: 15000 },
-  catering: { min: 10000, typical: 12500, max: 18000 },
-  photography: { min: 3000, typical: 4000, max: 6000 },
-  attire: { min: 2000, typical: 3000, max: 4500 },
-  flowers: { min: 2000, typical: 3000, max: 5000 },
-  entertainment: { min: 1800, typical: 2500, max: 4000 },
-  stationery: { min: 800, typical: 1000, max: 1500 },
-  favors: { min: 800, typical: 1000, max: 1500 },
-  transportation: { min: 800, typical: 1000, max: 2000 },
-  hair_makeup: { min: 1500, typical: 2500, max: 4000 }
+  venue: {
+    typical: 15000,  // Increased for NYC market
+    minimum: 8000,
+    maximum: 30000
+  },
+  catering: {
+    typical: 150,    // Per person cost for NYC
+    minimum: 100,    // Minimum per person
+    maximum: 250     // Maximum per person
+  },
+  photography: {
+    typical: 5000,
+    minimum: 3500,
+    maximum: 10000
+  },
+  attire: {
+    typical: 3000,
+    minimum: 1500,
+    maximum: 8000
+  },
+  floral: {
+    typical: 5000,
+    minimum: 3000,
+    maximum: 10000
+  },
+  music: {
+    typical: 3500,
+    minimum: 2000,
+    maximum: 8000
+  },
+  stationery: {
+    typical: 1500,
+    minimum: 800,
+    maximum: 4000
+  },
+  favors: {
+    typical: 1500,
+    minimum: 800,
+    maximum: 3500
+  },
+  transportation: {
+    typical: 2000,
+    minimum: 1000,
+    maximum: 5000
+  },
+  beauty: {
+    typical: 1000,
+    minimum: 600,
+    maximum: 3000
+  }
 }
 
 // Export types
-export type CateringStyle = 'Plated' | 'Buffet' | 'Family Style' | 'Food Stations' | 'Heavy Appetizers'
-export type BarService = 'Full Open Bar' | 'Beer & Wine Only' | 'Limited Open Bar' | 'Cash Bar' | 'No Alcohol'
-export type PhotoVideo = 'Both Photography & Videography' | 'Photography Only' | 'Videography Only'
-export type Coverage = 'Full Day Coverage' | 'Partial Day Coverage' | 'Ceremony & Portraits Only'
-export type FloralStyle = 'Fresh' | 'Artificial' | 'Mixed'
+export type CateringStyle = 'Plated Service (+30% over buffet)' | 'Buffet Service (Base Rate)' | 'Family Style (+20% over buffet)' | 'Food Stations (+15% over buffet)';
+export type BarService = 'Open Bar' | 'Beer & Wine Only' | 'Cash Bar' | 'No Alcohol';
+export type PhotoVideo = 'Photography Only' | 'Videography Only' | 'Both Photography & Videography'
+export type Coverage = 'Full Day Coverage (8-10 hours)' | 'Partial Day Coverage (6 hours)' | 'Ceremony & Portraits Only (4 hours)';
+export type FloralStyle = 'Fresh Flowers (Premium)' | 'Artificial Flowers (Budget-Friendly)' | 'Mixed Fresh & Artificial'
 export type WeddingPartySize = 'Small (1-4 people)' | 'Medium (5-8 people)' | 'Large (9+ people)'
 export type CeremonyDecorLevel = 'Minimal' | 'Standard' | 'Elaborate'
 export type AdditionalDecorAreas = 'None' | 'Some' | 'Extensive'
 export type DiyElements = 'Yes, planning DIY elements' | 'No DIY elements planned' | 'Maybe, still deciding'
-export type MusicChoice = 'DJ' | 'Live Band' | 'Both DJ & Band' | 'Other Live Music' | 'Playlist Only'
-export type BeautyStyle = 'DIY' | 'Bride Only' | 'Bride and Party'
-export type StationeryType = 'Digital' | 'Print' | 'Both'
+export type MusicChoice = 'DJ' | 'Band' | 'Both DJ & Band' | 'No Live Music (Playlist)';
+export type BeautyStyle = 'DIY' | 'Bride Only' | 'Bride and Party';
+export type StationeryType = 'Digital Only' | 'Printed Only' | 'Both Digital & Print'
 export type SaveTheDateType = 'digital' | 'printed' | 'none'
 export type InvitationType = 'digital' | 'printed' | 'both'
-export type TransportationType = 'None' | 'Venue to Venue' | 'Hotel to Venue' | 'Both'
+export type TransportationType = 'None' | 'Guest Shuttle Service' | 'Wedding Party Transportation' | 'Both'
 export type PlannerType = 'Full Wedding Planner' | 'Month-of Coordinator' | 'Day-of Coordinator' | 'No Professional Help'
 export type EntertainmentType = 'live music' | 'no live - will use recorded track' | 'none'
 export type BeautyCoverage = 'Full Wedding Party' | 'Bride Only' | 'Bride & Bridesmaids' | 'None Needed'
 
-interface ServiceMultipliers {
+export type ServiceMultipliers = {
   catering: Record<CateringStyle, number>
   bar: Record<BarService, number>
   photography: Record<PhotoVideo, number>
   coverage: Record<Coverage, number>
-  florals: Record<FloralStyle, number>
-  diy: Record<DiyElements, number>
+  floral: Record<FloralStyle, number>
   music: Record<MusicChoice, number>
-  beauty: Record<BeautyStyle, number>
-  planner: Record<PlannerType, number>
-  transportation: Record<TransportationType, number>
   stationery: Record<StationeryType, number>
+  favors: Record<InvitationType, number>
+  transportation: Record<TransportationType, number>
+  beauty: Record<BeautyStyle, number>
   saveTheDate: Record<SaveTheDateType, number>
-  entertainment: Record<EntertainmentType, number>
+  invitation: Record<InvitationType, number>
 }
 
 interface FloralMultipliers {
@@ -192,9 +231,9 @@ interface FloralMultipliers {
 
 const floralMultipliers: FloralMultipliers = {
   style: {
-    'Fresh': 1.0,
-    'Artificial': 0.7,
-    'Mixed': 0.85
+    'Fresh Flowers (Premium)': 1.5,
+    'Artificial Flowers (Budget-Friendly)': 0.6,
+    'Mixed Fresh & Artificial': 1.0
   },
   partySize: {
     'Small (1-4 people)': 0.8,
@@ -213,21 +252,19 @@ const floralMultipliers: FloralMultipliers = {
   }
 }
 
-// Export service multipliers
+// Define the multipliers for each service type
 export const serviceMultipliers: ServiceMultipliers = {
   catering: {
-    'Plated': 1.3,
-    'Buffet': 1.0,
-    'Family Style': 1.2,
-    'Food Stations': 1.15,
-    'Heavy Appetizers': 0.8
+    'Plated Service (+30% over buffet)': 1.3,
+    'Buffet Service (Base Rate)': 1.0,
+    'Family Style (+20% over buffet)': 1.2,
+    'Food Stations (+15% over buffet)': 1.15
   },
   bar: {
-    'Full Open Bar': 1.3,
-    'Beer & Wine Only': 0.8,
-    'Limited Open Bar': 1.0,
-    'Cash Bar': 0.3,
-    'No Alcohol': 0
+    'Open Bar': 1.5,
+    'Beer & Wine Only': 1.2,
+    'Cash Bar': 1.1,
+    'No Alcohol': 1.0
   },
   photography: {
     'Both Photography & Videography': 1.5,
@@ -235,58 +272,51 @@ export const serviceMultipliers: ServiceMultipliers = {
     'Videography Only': 0.8
   },
   coverage: {
-    'Full Day Coverage': 1.2,
-    'Partial Day Coverage': 1.0,
-    'Ceremony & Portraits Only': 0.7
+    'Full Day Coverage (8-10 hours)': 1.5,
+    'Partial Day Coverage (6 hours)': 1.0,
+    'Ceremony & Portraits Only (4 hours)': 0.7
   },
-  florals: {
-    'Fresh': 1.0,
-    'Artificial': 0.7,
-    'Mixed': 0.85
-  },
-  diy: {
-    'Yes, planning DIY elements': 0.7,
-    'No DIY elements planned': 1.0,
-    'Maybe, still deciding': 0.9
+  floral: {
+    'Fresh Flowers (Premium)': 1.5,
+    'Artificial Flowers (Budget-Friendly)': 0.5,
+    'Mixed Fresh & Artificial': 1.0
   },
   music: {
     'DJ': 1.0,
-    'Live Band': 1.8,
-    'Both DJ & Band': 2.0,
-    'Other Live Music': 1.5,
-    'Playlist Only': 0.2
+    'Band': 2.0,
+    'Both DJ & Band': 2.5,
+    'No Live Music (Playlist)': 0.3
   },
   beauty: {
-    'DIY': 0.2,
+    'DIY': 0.3,
     'Bride Only': 1.0,
-    'Bride and Party': 1.5
-  },
-  planner: {
-    'Full Wedding Planner': 1.5,
-    'Month-of Coordinator': 1.0,
-    'Day-of Coordinator': 0.8,
-    'No Professional Help': 0
+    'Bride and Party': 1.8  // Increased to better reflect per-person costs
   },
   transportation: {
     'None': 0,
-    'Venue to Venue': 1.0,
-    'Hotel to Venue': 1.2,
+    'Guest Shuttle Service': 1.2,
+    'Wedding Party Transportation': 0.8,
     'Both': 1.5
   },
   stationery: {
-    'Digital': 0.7,
-    'Print': 1.2,
-    'Both': 1.5
+    'Digital Only': 0.7,
+    'Printed Only': 1.2,
+    'Both Digital & Print': 1.5
+  },
+  favors: {
+    'digital': 0.3,
+    'printed': 0.8,
+    'both': 1.0
   },
   saveTheDate: {
     'digital': 0.3,
-    'printed': 0.5,
+    'printed': 0.8,
     'none': 0
   },
-  entertainment: {
-    'live music': 1.5,
-    'no live - will use recorded track': 0.7,
-    'none': 0
+  invitation: {
+    'digital': 0.3,
+    'printed': 0.8,
+    'both': 1.0
   }
 }
 
@@ -300,12 +330,12 @@ const guestCountScaling: Record<CategoryType, {
   catering: { fixed: 0.1, variable: 0.8, staffing: 0.1 },
   photography: { fixed: 0.8, variable: 0.1, staffing: 0.1 },
   attire: { fixed: 1.0, variable: 0, staffing: 0 },
-  flowers: { fixed: 0.3, variable: 0.6, staffing: 0.1 },
-  entertainment: { fixed: 0.8, variable: 0, staffing: 0.2 },
+  floral: { fixed: 0.3, variable: 0.6, staffing: 0.1 },
+  music: { fixed: 0.8, variable: 0, staffing: 0.2 },
   stationery: { fixed: 0.2, variable: 0.8, staffing: 0 },
   favors: { fixed: 0.1, variable: 0.9, staffing: 0 },
   transportation: { fixed: 0.6, variable: 0.3, staffing: 0.1 },
-  hair_makeup: { fixed: 0.2, variable: 0.7, staffing: 0.1 }
+  beauty: { fixed: 0.3, variable: 0.6, staffing: 0.1 }  // Adjusted to better reflect per-person costs
 }
 
 // Calculate staffing needs based on guest count
@@ -331,7 +361,7 @@ const calculateMinimumBudget = (
   seasonalFactor: number
 ): number => {
   // Calculate minimum budget using the min values from baseCosts
-  const baseTotal = Object.values(baseCosts).reduce((sum, cost) => sum + cost.min, 0)
+  const baseTotal = Object.values(baseCosts).reduce((sum, cost) => sum + cost.minimum, 0)
   const guestFactor = Math.pow(guestCount / 100, 0.85)
   return Math.round(baseTotal * locationFactor * guestFactor * seasonalFactor)
 }
@@ -404,35 +434,41 @@ const calculateSeasonalFactor = (date: Date): number => {
 }
 
 // Type guard functions
-const isCateringStyle = (value: string): value is CateringStyle => 
+export const isCateringStyle = (value: string): value is CateringStyle => 
   Object.keys(serviceMultipliers.catering).includes(value)
 
-const isBarService = (value: string): value is BarService =>
+export const isBarService = (value: string): value is BarService =>
   Object.keys(serviceMultipliers.bar).includes(value)
 
-const isPhotoVideo = (value: string): value is PhotoVideo =>
+export const isPhotoVideo = (value: string): value is PhotoVideo =>
   Object.keys(serviceMultipliers.photography).includes(value)
 
-const COVERAGE_OPTIONS = ["Full Day Coverage", "Partial Day Coverage", "Ceremony & Portraits Only"] as const;
+export const isCoverage = (value: string): value is Coverage =>
+  ['Ceremony Only', 'Reception Only', 'Full Day Coverage', 'Two Day Coverage', 'Elopement Package'].includes(value)
 
-const isCoverage = (value: string): value is Coverage => {
-  return COVERAGE_OPTIONS.includes(value as Coverage);
-}
+export const isFloralStyle = (value: string): value is FloralStyle =>
+  ['Fresh Flowers (Premium)', 'Artificial Flowers (Budget-Friendly)', 'Mixed Fresh & Artificial'].includes(value)
 
-const isFloralStyle = (value: string): value is FloralStyle =>
-  ['Fresh', 'Artificial', 'Mixed'].includes(value)
+export const isDiyElements = (value: string): value is DiyElements =>
+  ['Yes, planning DIY elements', 'No DIY elements planned', 'Maybe, still deciding'].includes(value)
 
-const isDiyElements = (value: string): value is DiyElements =>
-  Object.keys(serviceMultipliers.diy).includes(value)
-
-const isMusicChoice = (value: string): value is MusicChoice =>
+export const isMusicChoice = (value: string): value is MusicChoice =>
   Object.keys(serviceMultipliers.music).includes(value)
 
-const isBeautyCoverage = (value: string): value is BeautyCoverage =>
-  Object.keys(serviceMultipliers.beauty).includes(value)
+export const isBeautyStyle = (value: string): value is BeautyStyle =>
+  ['Bride Only', 'Bride and Party'].includes(value)
 
-const isPlannerType = (value: string): value is PlannerType =>
-  Object.keys(serviceMultipliers.planner).includes(value)
+export const isTransportationType = (value: string): value is TransportationType =>
+  ['None', 'Guest Shuttle Service', 'Wedding Party Transportation', 'Both'].includes(value)
+
+export const isStationeryType = (value: string): value is StationeryType =>
+  ['Digital Only', 'Printed Only', 'Both Digital & Print'].includes(value)
+
+export const isSaveTheDateType = (value: string): value is SaveTheDateType =>
+  ['digital', 'printed', 'none'].includes(value)
+
+export const isInvitationType = (value: string): value is InvitationType =>
+  ['digital', 'printed', 'both'].includes(value)
 
 // Add category descriptions and cost breakdowns
 const categoryDescriptions: Record<CategoryType, {
@@ -460,12 +496,12 @@ const categoryDescriptions: Record<CategoryType, {
     costBreakdown: "Total cost calculated from:\n- Main dress budget (custom or off-rack)\n- Suit budget × number of suits\n- Accessories budget\n- Reception dress (if selected)\n- Alterations (if needed, typically adds 15-20%)",
     scalingExplanation: "Final cost is the sum of all specified budgets, with alterations calculated as a percentage when selected. Custom dresses typically cost 30-50% more than off-rack."
   },
-  flowers: {
+  floral: {
     description: "Floral arrangements based on your chosen style, wedding party size, and decor preferences.",
     costBreakdown: "30% personal flowers (based on party size), 40% ceremony decor (by chosen level), 30% reception decor (by area count)",
     scalingExplanation: "Costs vary by floral style (fresh/artificial/mixed), wedding party size, ceremony decor level, and number of additional decor areas."
   },
-  entertainment: {
+  music: {
     description: "Music for ceremony and reception based on your selected options and duration.",
     costBreakdown: "40% ceremony music, 60% reception entertainment (varies by choice)",
     scalingExplanation: "Base rate varies by music choice (DJ, band, both, or other) and number of hours needed."
@@ -485,10 +521,10 @@ const categoryDescriptions: Record<CategoryType, {
     costBreakdown: "Costs based on service type: hotel-to-venue (100%), venue-to-venue (100%), or both (150%). Includes vehicle rental and staffing.",
     scalingExplanation: "Cost varies by number of guests needing transport and number of trips/locations."
   },
-  hair_makeup: {
-    description: "Professional hair and makeup services for the bride and optional wedding party coverage.",
-    costBreakdown: "Base cost varies by choice: DIY (20% of typical), bride only (100%), or bride with party (150%). Additional costs include products (25%) and travel fees (15%).",
-    scalingExplanation: "Costs vary based on number of people and service type (DIY, bride only, or full party)."
+  beauty: {
+    description: "Professional hair and makeup services for the bride and optional wedding party coverage. Includes trial sessions, day-of services, and touch-up kits.",
+    costBreakdown: "Base cost varies by choice:\n- DIY: 30% of typical cost (includes professional consultation and product recommendations)\n- Bride Only: Standard rate (includes trial and day-of services)\n- Bride and Party: 180% of standard rate (scales with party size)",
+    scalingExplanation: "Final cost is determined by:\n1. Service choice (DIY/Bride Only/Full Party)\n2. Number of people needing services\n3. Whether trials are included\n4. Travel fees if applicable"
   }
 }
 
@@ -514,6 +550,7 @@ interface BudgetPreferences {
   additionalDecorAreas?: string | AdditionalDecorAreas
   diyElements?: string
   musicChoice?: string
+  ceremonyMusic?: 'Live Music' | 'No Live - Will Use Recorded Track' | 'None'
   transportationType?: string | TransportationType
   stationeryType?: string | StationeryType
   beautyStyle?: string | BeautyStyle
@@ -527,6 +564,8 @@ interface BudgetPreferences {
   accessoriesBudget?: string
   needReceptionDress?: boolean
   receptionDressBudget?: string
+  transportationGuestCount?: string
+  transportationHours?: string
 }
 
 // Calculate the combined floral multiplier
@@ -572,210 +611,106 @@ const calculateBudgetRanges = (
     catering: 1.0,
     photography: 1.0,
     attire: 1.0,
-    flowers: 1.0,
-    entertainment: 1.0,
+    floral: 1.0,
+    music: 1.0,
     stationery: 1.0,
     favors: 1.0,
     transportation: 1.0,
-    hair_makeup: 1.0
+    beauty: 1.0
   }
   
   // Calculate base multipliers with caps
-  const baseLocationFactor = Math.min(locationFactor, 2.0) // Cap location factor
+  const baseLocationFactor = Math.min(locationFactor, 2.5) // Increased cap for high-cost areas
   const baseSeasonalFactor = seasonalFactor // Already capped between 1.0-1.2
-  const baseGuestFactor = calculateGuestFactor(guestCount)
+  const baseGuestFactor = Math.pow(guestCount / 100, 0.85) // Adjusted guest count scaling
   const baseStaffingFactor = calculateStaffingFactor(guestCount)
 
-  // Special handling for attire - use exact sum of individual items
-  const attireTotalCost = (() => {
-    let total = 0;
-    if (preferences.dressBudget) {
-      total += parseFloat(preferences.dressBudget.replace(/[^0-9.]/g, '')) || 0;
-    }
-    if (preferences.suitBudget) {
-      total += parseFloat(preferences.suitBudget.replace(/[^0-9.]/g, '')) || 0;
-    }
-    if (preferences.accessoriesBudget) {
-      total += parseFloat(preferences.accessoriesBudget.replace(/[^0-9.]/g, '')) || 0;
-    }
-    if (preferences.needReceptionDress && preferences.receptionDressBudget) {
-      total += parseFloat(preferences.receptionDressBudget.replace(/[^0-9.]/g, '')) || 0;
-    }
-    return total;
-  })();
-
-  // Calculate service style multipliers with realistic combinations
-  const serviceMultipliersEffect = {
+  // Calculate service style multipliers
+  const serviceMultipliersEffect: Record<CategoryType, number> = {
     venue: 1.0,
     catering: preferences.cateringStyle && isCateringStyle(preferences.cateringStyle) 
-      ? (serviceMultipliers.catering[preferences.cateringStyle] * 0.7 + 0.3)
+      ? serviceMultipliers.catering[preferences.cateringStyle]
       : 1.0,
-    photography: preferences.photoVideo && isPhotoVideo(preferences.photoVideo) && preferences.coverage && isCoverage(preferences.coverage)
-      ? Math.min(
-          // Take the higher of the two multipliers and add a small boost if both are high-end
-          Math.max(
-            serviceMultipliers.photography[preferences.photoVideo],
-            serviceMultipliers.coverage[preferences.coverage]
-          ) * 0.8 + 
-          (serviceMultipliers.photography[preferences.photoVideo] > 1.2 && 
-           serviceMultipliers.coverage[preferences.coverage] > 1.1 ? 0.2 : 0),
-          1.8 // Hard cap on photography multiplier
-        )
+    photography: preferences.photoVideo && isPhotoVideo(preferences.photoVideo)
+      ? serviceMultipliers.photography[preferences.photoVideo]
       : 1.0,
-    flowers: (() => {
-      if (!preferences.floralStyle) return 1.0;
-
-      // Validate all floral-related inputs
-      if (!isFloralStyle(preferences.floralStyle)) return 1.0;
-      
-      const partySize = preferences.weddingPartySize && isWeddingPartySize(preferences.weddingPartySize) 
-        ? preferences.weddingPartySize 
-        : 'Medium (5-8 people)';
-        
-      const ceremonyDecor = preferences.ceremonyDecorLevel && isCeremonyDecorLevel(preferences.ceremonyDecorLevel)
-        ? preferences.ceremonyDecorLevel
-        : 'Standard';
-        
-      const additionalDecor = preferences.additionalDecorAreas && isAdditionalDecorAreas(preferences.additionalDecorAreas)
-        ? preferences.additionalDecorAreas
-        : 'Some';
-
-      // Calculate the combined floral multiplier using all available preferences
-      const combinedMultiplier = calculateFloralMultiplier(
-        preferences.floralStyle,
-        partySize,
-        ceremonyDecor,
-        additionalDecor
-      );
-
-      // Add explanatory notes for significant adjustments
-      if (combinedMultiplier > 1.2) {
-        adjustments.push(`Increased floral budget due to ${ceremonyDecor.toLowerCase()} ceremony decor and ${additionalDecor.toLowerCase()} additional decor areas`);
-      } else if (combinedMultiplier < 0.8) {
-        adjustments.push(`Reduced floral budget based on ${preferences.floralStyle.toLowerCase()} flowers and minimal decor selections`);
-      }
-
-      return combinedMultiplier;
-    })(),
-    entertainment: preferences.musicChoice && isMusicChoice(preferences.musicChoice)
-      ? Math.min(serviceMultipliers.music[preferences.musicChoice], 1.8) // Cap entertainment increase
+    attire: 1.0,
+    floral: preferences.floralStyle && isFloralStyle(preferences.floralStyle)
+      ? serviceMultipliers.floral[preferences.floralStyle]
       : 1.0,
-    attire: attireTotalCost > 0 ? (attireTotalCost / baseCosts.attire.typical) : 1.0,
-    stationery: (() => {
-      if (!preferences.stationeryType || !preferences.saveTheDate) return 1.0;
-      
-      const stationeryMultiplier = serviceMultipliers.stationery[preferences.stationeryType as StationeryType] || 1.0;
-      const saveTheDateMultiplier = serviceMultipliers.saveTheDate[preferences.saveTheDate as SaveTheDateType] || 0;
-      
-      // Combine both multipliers with weighted average
-      const combinedMultiplier = (stationeryMultiplier * 0.7) + (saveTheDateMultiplier * 0.3);
-      
-      if (combinedMultiplier !== 1.0) {
-        adjustments.push(`Adjusted stationery budget for ${preferences.stationeryType} invitations and ${preferences.saveTheDate} save-the-dates`);
-      }
-      
-      return combinedMultiplier;
-    })(),
-    favors: (() => {
-      if (!preferences.includeFavors) {
-        adjustments.push('No budget allocated for favors as per preference');
-        return 0;
-      }
-      
-      if (!preferences.favorCostPerPerson) return 1.0;
-      
-      const costPerPerson = parseFloat(preferences.favorCostPerPerson);
-      if (isNaN(costPerPerson)) return 1.0;
-      
-      // Base the multiplier on the per-person cost relative to a typical $5 favor
-      const baseMultiplier = costPerPerson / 5;
-      const finalMultiplier = Math.min(Math.max(baseMultiplier, 0.2), 2.0); // Cap between 0.2x and 2.0x
-      
-      adjustments.push(`Adjusted favors budget for ${guestCount} guests at $${costPerPerson.toFixed(2)} per person`);
-      
-      return finalMultiplier;
-    })(),
-    transportation: (() => {
-      if (!preferences.transportationType || !isTransportationType(preferences.transportationType)) return 0;
-      
-      const baseMultiplier = serviceMultipliers.transportation[preferences.transportationType];
-      const guestCountFactor = Math.ceil(guestCount / 50) * 0.1; // Additional 10% per 50 guests
-      
-      const finalMultiplier = Math.min(baseMultiplier * (1 + guestCountFactor), 2.0);
-      
-      if (finalMultiplier > 1.2) {
-        adjustments.push(`Increased transportation budget due to ${preferences.transportationType.toLowerCase()} needs and guest count of ${guestCount}`);
-      }
-      
-      return finalMultiplier;
-    })(),
-    hair_makeup: (() => {
-      if (!preferences.beautyStyle || !isBeautyStyle(preferences.beautyStyle)) return 1.0;
-      
-      const baseMultiplier = serviceMultipliers.beauty[preferences.beautyStyle];
-      let partySize = 1; // Default to bride only
-      
-      if (preferences.beautyStyle === 'Bride and Party' && preferences.bridesmaidCount) {
-        partySize = parseInt(preferences.bridesmaidCount) + 1; // Add 1 for the bride
-      }
-      
-      const partySizeFactor = Math.max(0.2, Math.min(0.5, (partySize - 1) * 0.1)); // 10% per additional person, min 20%, max 50%
-      const finalMultiplier = Math.min(baseMultiplier * (1 + partySizeFactor), 2.0);
-      
-      if (preferences.beautyStyle === 'Bride and Party') {
-        adjustments.push(`Adjusted beauty services budget for ${partySize} people`);
-      }
-      
-      return finalMultiplier;
-    })(),
+    music: preferences.musicChoice && isMusicChoice(preferences.musicChoice)
+      ? serviceMultipliers.music[preferences.musicChoice]
+      : 1.0,
+    beauty: preferences.beautyStyle && isBeautyStyle(preferences.beautyStyle)
+      ? serviceMultipliers.beauty[preferences.beautyStyle]
+      : 1.0,
+    transportation: preferences.transportationType && isTransportationType(preferences.transportationType)
+      ? serviceMultipliers.transportation[preferences.transportationType]
+      : 1.0,
+    stationery: preferences.stationeryType && isStationeryType(preferences.stationeryType)
+      ? serviceMultipliers.stationery[preferences.stationeryType]
+      : 1.0,
+    favors: preferences.includeFavors
+      ? (preferences.favorCostPerPerson ? parseFloat(preferences.favorCostPerPerson) / 5 : 1.0)
+      : 0
   }
 
-  // Apply the calculated multipliers to each category
-  Object.entries(serviceMultipliersEffect).forEach(([category, multiplier]) => {
-    if (category in categoryMultipliers) {
-      categoryMultipliers[category as CategoryType] = multiplier
-    }
-  })
-
-  // First pass: Calculate initial multipliers for each category using weighted combinations
-  const MAX_CATEGORY_MULTIPLIER = 2.0 // More conservative cap
-  
+  // First pass: Calculate initial multipliers for each category
   Object.keys(baseCosts).forEach((category) => {
     const cat = category as CategoryType
-    
-    // Skip attire category as it uses exact sum
-    if (cat === 'attire') {
-      categoryMultipliers[cat] = serviceMultipliersEffect.attire;
-      return;
-    }
-
-    // Use weighted averages instead of pure multiplication for more realistic scaling
     let totalMultiplier = 1.0
     
-    // Location and seasonal factors (weighted)
-    if (['venue', 'catering', 'transportation'].includes(cat)) {
-      totalMultiplier *= (baseLocationFactor * 0.7 + baseSeasonalFactor * 0.3)
+    // Apply location factor (weighted by category)
+    if (['venue', 'catering'].includes(cat)) {
+      totalMultiplier *= baseLocationFactor
     } else {
-      totalMultiplier *= (baseLocationFactor * 0.3 + 0.7) // Other categories less affected by location
+      // Less dilution of location factor for other categories
+      totalMultiplier *= (baseLocationFactor * 0.5 + 0.5)
     }
     
-    // Service style multipliers
-    totalMultiplier *= serviceMultipliersEffect[cat]
-    
-    // Guest count scaling (with diminishing returns)
-    if (['venue', 'catering', 'transportation'].includes(cat)) {
-      totalMultiplier *= (baseGuestFactor * 0.8 + 0.2) // Weighted to prevent extreme scaling
+    // Apply seasonal factor (mainly affects venue and catering)
+    if (['venue', 'catering'].includes(cat)) {
+      totalMultiplier *= baseSeasonalFactor
     }
     
-    // Staffing factor (only where relevant)
-    if (['catering', 'photography', 'entertainment'].includes(cat)) {
-      totalMultiplier *= (baseStaffingFactor * 0.6 + 0.4) // Weighted to prevent extreme scaling
+    // Apply guest count scaling - FIXED to prevent double counting
+    if (cat === 'catering') {
+      // Catering is already per-person in baseCosts, don't multiply by guest count here
+      totalMultiplier *= serviceMultipliersEffect[cat]
+    } else if (['venue', 'rentals'].includes(cat)) {
+      // Venue and rentals scale less than linearly
+      totalMultiplier *= baseGuestFactor
+    } else if (['favors', 'stationery'].includes(cat)) {
+      // These scale mostly with guest count but have some fixed costs
+      totalMultiplier *= (guestCount * 0.8 + 20) / 100
     }
     
-    // Cap individual category multiplier
-    if (totalMultiplier > MAX_CATEGORY_MULTIPLIER) {
-      adjustments.push(`${cat.charAt(0).toUpperCase() + cat.slice(1)} costs were capped at ${MAX_CATEGORY_MULTIPLIER}x to maintain realistic pricing`)
-      totalMultiplier = MAX_CATEGORY_MULTIPLIER
+    // Apply staffing factor where relevant
+    if (['catering', 'service', 'coordination'].includes(cat)) {
+      totalMultiplier *= baseStaffingFactor
+    }
+    
+    // Set minimum multipliers to prevent unrealistic low costs
+    const minMultipliers: Record<CategoryType, number> = {
+      venue: 0.5,
+      catering: 0.7, // Ensures minimum viable per-person cost
+      photography: 0.6,
+      attire: 0.5,
+      floral: 0.4,
+      music: 0.5,
+      stationery: 0.3,
+      favors: 0.2,
+      transportation: 0.4,
+      beauty: 0.4
+    }
+    
+    totalMultiplier = Math.max(totalMultiplier, minMultipliers[cat])
+    
+    // Cap the multiplier to prevent unrealistic scaling
+    const MAX_MULTIPLIER = cat === 'catering' ? 3.0 : 3.0 // Unified cap
+    if (totalMultiplier > MAX_MULTIPLIER) {
+      adjustments.push(`${cat.charAt(0).toUpperCase() + cat.slice(1)} costs were capped at ${MAX_MULTIPLIER}x to maintain realistic pricing`)
+      totalMultiplier = MAX_MULTIPLIER
     }
     
     categoryMultipliers[cat] = totalMultiplier
@@ -785,47 +720,71 @@ const calculateBudgetRanges = (
   let initialTotalCost = 0
   Object.keys(baseCosts).forEach((category) => {
     const cat = category as CategoryType
-    initialTotalCost += baseCosts[cat].typical * categoryMultipliers[cat]
+    if (cat === 'favors' && preferences.includeFavors === false) return
+    
+    let baseCost = baseCosts[cat].typical
+    // For catering, multiply by guest count here
+    if (cat === 'catering') {
+      baseCost *= guestCount
+    }
+    
+    const categoryTotal = baseCost * categoryMultipliers[cat]
+    initialTotalCost += categoryTotal
+    
+    // Add minimum cost check
+    const minCosts: Record<CategoryType, number> = {
+      venue: 5000,
+      catering: guestCount * 75, // Minimum $75 per person
+      photography: 2500,
+      attire: 1000,
+      floral: 2000,
+      music: 1500,
+      stationery: 500,
+      favors: preferences.includeFavors ? 200 : 0,
+      transportation: 800,
+      beauty: 500
+    }
+    
+    if (categoryTotal < minCosts[cat]) {
+      const adjustment = minCosts[cat] - categoryTotal
+      initialTotalCost += adjustment
+      categoryMultipliers[cat] *= (minCosts[cat] / categoryTotal)
+      adjustments.push(`${cat.charAt(0).toUpperCase() + cat.slice(1)} costs were adjusted up to meet minimum viable cost of ${formatCurrency(minCosts[cat])}`)
+    }
   })
 
-  // Second pass: Scale all categories to fit within total budget
+  // Scale to fit within total budget if needed
   if (initialTotalCost > totalBudget) {
-    const attireCost = baseCosts.attire.typical * categoryMultipliers.attire;
-    const nonAttireCost = initialTotalCost - attireCost;
-    
-    // Scale only non-attire categories to fit remaining budget
-    const remainingBudget = totalBudget - attireCost;
-    const scalingFactor = remainingBudget / nonAttireCost;
-    
-    adjustments.push(`Adjusted non-attire costs down by ${Math.round((1 - scalingFactor) * 100)}% to meet target budget of ${formatCurrency(totalBudget)}`);
+    const scalingFactor = totalBudget / initialTotalCost
+    adjustments.push(`Adjusted costs down by ${Math.round((1 - scalingFactor) * 100)}% to meet target budget of ${formatCurrency(totalBudget)}`)
     
     Object.keys(categoryMultipliers).forEach((category) => {
       if (category !== 'attire') {
-        categoryMultipliers[category as CategoryType] *= scalingFactor;
+        categoryMultipliers[category as CategoryType] *= scalingFactor
       }
-    });
+    })
   }
 
-  // Calculate final ranges using scaled multipliers
-  const min = Object.keys(baseCosts).reduce((sum, category) => {
-    const cat = category as CategoryType
-    return sum + (baseCosts[cat].min * categoryMultipliers[cat])
-  }, 0)
-
-  const typical = Object.keys(baseCosts).reduce((sum, category) => {
-    const cat = category as CategoryType
-    return sum + (baseCosts[cat].typical * categoryMultipliers[cat])
-  }, 0)
-
-  const max = Object.keys(baseCosts).reduce((sum, category) => {
-    const cat = category as CategoryType
-    return sum + (baseCosts[cat].max * categoryMultipliers[cat])
-  }, 0)
+  // Calculate final ranges
+  const calculateRange = (costType: 'minimum' | 'typical' | 'maximum'): number => {
+    return Object.keys(baseCosts).reduce((sum, category) => {
+      const cat = category as CategoryType
+      if (cat === 'favors' && preferences.includeFavors === false) return sum
+      
+      let baseCost = baseCosts[cat][costType]
+      // For catering, use per-person cost
+      if (cat === 'catering') {
+        baseCost *= guestCount
+      }
+      
+      return sum + (baseCost * categoryMultipliers[cat])
+    }, 0)
+  }
 
   return {
-    min,
-    typical,
-    max,
+    min: calculateRange('minimum'),
+    typical: calculateRange('typical'),
+    max: calculateRange('maximum'),
     adjustments,
     categoryMultipliers
   }
@@ -943,21 +902,7 @@ const budgetStorage = {
     guestCount: number,
     location: LocationData,
     priorities: string[],
-    preferences?: {
-      cateringStyle?: string
-      barService?: string
-      photoVideo?: string
-      coverage?: string
-      floralStyle?: string
-      diyElements?: string
-      musicChoice?: string
-      beautyCoverage?: string
-      planningAssistance?: string
-      transportationType?: string
-      stationeryType?: string
-      beautyStyle?: string
-      bridesmaidCount?: string
-    }
+    preferences?: BudgetPreferences
   ): {
     categories: BudgetCategory[]
     rationale: BudgetData['rationale']
@@ -977,13 +922,13 @@ const budgetStorage = {
         throw new BudgetError('Invalid location', 'INVALID_LOCATION')
       }
 
-      // Use the new location cost factor function
-      const locationFactor = getLocationCostFactor(location);
+      // Get location factor dynamically
+      const locationFactor = getLocationCostFactor(location)
 
-      // Calculate seasonal factor based on wedding date if available
+      // Calculate seasonal factor
       const seasonalFactor = location.weddingDate 
         ? calculateSeasonalFactor(new Date(location.weddingDate))
-        : 1.0;
+        : 1.0
 
       // Calculate budget ranges with all factors
       const budgetRanges = calculateBudgetRanges(
@@ -994,32 +939,74 @@ const budgetStorage = {
         preferences || {}
       )
 
-      // Use the typical range as the suggested budget
       const suggestedBudget = budgetRanges.typical
 
-      // Create categories with ranges
-      const categories: BudgetCategory[] = Object.entries(baseCosts).map(([name, ranges]) => {
-        const percentage = ranges.typical / Object.values(baseCosts).reduce((sum, r) => sum + r.typical, 0)
-        const estimatedCost = Math.round(suggestedBudget * percentage)
-        const categoryInfo = categoryDescriptions[name as CategoryType]
-        
-        const priority: 'high' | 'medium' | 'low' = priorities.includes(name) ? 'high' : 'medium'
-        
-        const category: BudgetCategory = {
-          id: name.toLowerCase(),
-          name: name.charAt(0).toUpperCase() + name.slice(1),
-          percentage: Math.round(percentage * 100),
-          estimatedCost,
-          actualCost: 0,
-          remaining: estimatedCost,
-          rationale: categoryInfo.description,
-          notes: categoryInfo.costBreakdown,
-          description: categoryInfo.scalingExplanation,
-          budgetingTips: []
-        }
-        
-        return category
-      })
+      // Create categories
+      const categories: BudgetCategory[] = Object.entries(baseCosts)
+        .filter(([name]) => {
+          if (name === 'favors' && preferences?.includeFavors === false) {
+            return false
+          }
+          return true
+        })
+        .map(([name, ranges]) => {
+          const categoryInfo = categoryDescriptions[name as CategoryType]
+          const priority: Priority = priorities.includes(name) ? 'high' : 'medium'
+          
+          // Handle attire category separately using direct user inputs
+          if (name === 'attire' && preferences) {
+            const dressBudget = preferences.dressBudget ? parseFloat(preferences.dressBudget) : 0
+            const suitBudget = preferences.suitBudget ? parseFloat(preferences.suitBudget) : 0
+            const accessoriesBudget = preferences.accessoriesBudget ? parseFloat(preferences.accessoriesBudget) : 0
+            const receptionDressBudget = preferences.needReceptionDress && preferences.receptionDressBudget 
+              ? parseFloat(preferences.receptionDressBudget) 
+              : 0
+
+            const totalAttireCost = dressBudget + suitBudget + accessoriesBudget + receptionDressBudget
+
+            return {
+              id: name.toLowerCase(),
+              name: name.charAt(0).toUpperCase() + name.slice(1),
+              percentage: Math.round((totalAttireCost / suggestedBudget) * 100),
+              estimatedCost: totalAttireCost,
+              actualCost: 0,
+              remaining: totalAttireCost,
+              rationale: `Based on specified budgets: Dress ($${dressBudget}), Suit ($${suitBudget}), Accessories ($${accessoriesBudget})${preferences.needReceptionDress ? `, Reception Dress ($${receptionDressBudget})` : ''}`,
+              notes: categoryInfo.costBreakdown,
+              description: categoryInfo.scalingExplanation,
+              budgetingTips: [],
+              priority
+            }
+          }
+
+          // Calculate other categories normally
+          const totalTypical = Object.entries(baseCosts).reduce((sum, [catName, r]) => {
+            if (catName === 'favors' && preferences?.includeFavors === false) {
+              return sum
+            }
+            if (catName === 'attire') {
+              return sum
+            }
+            return sum + r.typical
+          }, 0)
+          
+          const percentage = ranges.typical / totalTypical
+          const estimatedCost = Math.round(suggestedBudget * percentage)
+          
+          return {
+            id: name.toLowerCase(),
+            name: name.charAt(0).toUpperCase() + name.slice(1),
+            percentage: Math.round(percentage * 100),
+            estimatedCost,
+            actualCost: 0,
+            remaining: estimatedCost,
+            rationale: categoryInfo.description,
+            notes: categoryInfo.costBreakdown,
+            description: categoryInfo.scalingExplanation,
+            budgetingTips: [],
+            priority
+          }
+        })
 
       return {
         categories,
@@ -1051,16 +1038,6 @@ const formatCurrency = (amount: number): string => {
     maximumFractionDigits: 0
   }).format(amount)
 }
-
-// Add type guards for new types
-const isTransportationType = (value: string): value is TransportationType =>
-  ['None', 'Venue to Venue', 'Hotel to Venue', 'Both'].includes(value)
-
-const isStationeryType = (value: string): value is StationeryType =>
-  ['Digital', 'Print', 'Both'].includes(value)
-
-const isBeautyStyle = (value: string): value is BeautyStyle =>
-  ['DIY', 'Bride Only', 'Bride and Party'].includes(value)
 
 export default budgetStorage
 

@@ -113,7 +113,7 @@ const PHOTO_VIDEO_OPTIONS = ["Both Photography & Videography", "Photography Only
 const COVERAGE_OPTIONS = ["Full Day Coverage (8-10 hours)", "Partial Day Coverage (6 hours)", "Ceremony & Portraits Only (4 hours)"] as const;
 const FLORAL_STYLE_OPTIONS = ["Fresh Flowers (Premium)", "Artificial Flowers (Budget-Friendly)", "Mixed Fresh & Artificial"] as const;
 const CEREMONY_MUSIC_OPTIONS = ["Live Music", "No Live - Will Use Recorded Track", "None"] as const;
-const RECEPTION_MUSIC_OPTIONS = ["Live Music", "No Live - Will Use Recorded Track", "None"] as const;
+const RECEPTION_MUSIC_OPTIONS = ["DJ", "Band", "Both DJ & Band", "No Live Music (Playlist)"] as const;
 const BEAUTY_STYLE_OPTIONS = ["DIY", "Bride Only", "Bride and Party"] as const;
 const VENUE_TYPE_OPTIONS = ["paid", "church", "temple", "family-property", "other"] as const;
 const TRANSPORTATION_TYPE_OPTIONS = ["None", "Guest Shuttle Service", "Wedding Party Transportation", "Both"] as const;
@@ -277,80 +277,41 @@ export default function BudgetSurvey() {
       if (budgetData.floralStyle === "Fresh Flowers (Premium)") {
         priorities.push("florals");
       }
-      if (budgetData.receptionMusic === "Live Music") {
+      if (budgetData.receptionMusic === "Band" || budgetData.receptionMusic === "Both DJ & Band") {
         priorities.push("entertainment");
       }
 
       // Create comprehensive preferences object
-      const preferences = {
-        // Basic Details
-        totalBudget: totalBudget,
-        guestCount: guestCount,
-        weddingDate: budgetData.weddingDate,
-        
-        // Location
-        isDestination: budgetData.isDestination,
-        city: budgetData.city,
-        state: budgetData.state,
-        country: budgetData.isDestination ? budgetData.country : "United States",
-
-        // Venue & Location
-        separateVenues: budgetData.separateVenues,
-        ceremonyVenueType: budgetData.ceremonyVenueType,
-        
-        // Catering & Bar
+      const preferences: BudgetPreferences = {
         cateringStyle: budgetData.cateringStyle,
-        barType: budgetData.barType,
-        
-        // Photography & Video
+        barService: budgetData.barType,
         photoVideo: budgetData.photoVideo,
         coverage: budgetData.coverage,
-        coverageHours: budgetData.coverageHours,
-        
-        // Florals & Decor
         floralStyle: budgetData.floralStyle,
-        bouquetCount: budgetData.bouquetCount,
-        needCeremonyFlowers: budgetData.needCeremonyFlowers,
-        centerpeiceCount: budgetData.centerpeiceCount,
-        needExtraDecor: budgetData.needExtraDecor,
-        weddingPartySize: budgetData.weddingPartySize,
-        ceremonyDecorLevel: budgetData.ceremonyDecorLevel,
-        additionalDecorAreas: budgetData.additionalDecorAreas,
-        
-        // Entertainment
-        ceremonyMusic: budgetData.ceremonyMusic,
-        receptionMusic: budgetData.receptionMusic,
-        musicHours: budgetData.musicHours,
-        
-        // Beauty Services
+        musicChoice: budgetData.receptionMusic,
         beautyStyle: budgetData.beautyStyle,
-        bridesmaidCount: budgetData.bridesmaidCount,
-        makeupFor: budgetData.makeupFor,
-        makeupServices: budgetData.makeupServices,
-        
-        // Transportation
-        needTransportation: budgetData.needTransportation,
         transportationType: budgetData.transportationType,
         transportationGuestCount: parseInt(budgetData.transportationGuestCount) || 0,
         transportationHours: budgetData.transportationHours,
-        
-        // Favors
+        makeupFor: budgetData.makeupFor,
+        makeupServices: budgetData.makeupServices,
+        weddingPartySize: budgetData.weddingPartySize,
+        ceremonyDecorLevel: budgetData.ceremonyDecorLevel,
+        additionalDecorAreas: budgetData.additionalDecorAreas,
+        stationeryType: budgetData.stationeryType,
+        saveTheDate: budgetData.saveTheDate,
+        invitationType: budgetData.invitationType,
+        bridesmaidCount: budgetData.bridesmaidCount,
         includeFavors: budgetData.includeFavors,
         favorCostPerPerson: budgetData.favorCostPerPerson,
-        
-        // Stationery
-        stationeryType: budgetData.stationeryType,
-        
-        // Attire
-        dressType: budgetData.dressType,
         dressBudget: budgetData.dressBudget,
-        receptionDressBudget: budgetData.needReceptionDress ? budgetData.receptionDressBudget : '0',
         suitBudget: budgetData.suitBudget,
         accessoriesBudget: budgetData.accessoriesBudget,
         needAlterations: budgetData.needAlterations,
         needReceptionDress: budgetData.needReceptionDress,
+        receptionDressBudget: budgetData.receptionDressBudget,
         suitCount: budgetData.suitCount
-      } as BudgetPreferences;
+      };
 
       // Calculate the budget with preferences
       const result = budgetStorage.calculateBudget(
@@ -465,6 +426,8 @@ export default function BudgetSurvey() {
         ceremonyDecorLevel: budgetData.ceremonyDecorLevel,
         additionalDecorAreas: budgetData.additionalDecorAreas,
         stationeryType: budgetData.stationeryType,
+        saveTheDate: budgetData.saveTheDate,
+        invitationType: budgetData.invitationType,
         bridesmaidCount: budgetData.bridesmaidCount,
         includeFavors: budgetData.includeFavors,
         favorCostPerPerson: budgetData.favorCostPerPerson,
@@ -1086,9 +1049,10 @@ export default function BudgetSurvey() {
                 <div>
                   <p className="font-medium mb-2">Reception Entertainment:</p>
                   <ul className="space-y-1 list-none">
-                    <li>• Live Band: Full band with MC ($4000-8000+)</li>
-                    <li>• DJ: Professional DJ with MC ($1500-3000)</li>
-                    <li>• Recorded Music: DIY playlist (equipment fees apply)</li>
+                    <li>• DJ: Professional DJ with MC ($1,500-2,500)</li>
+                    <li>• Band: Live band performance ($4,000-8,000)</li>
+                    <li>• Both DJ & Band: Full entertainment package ($6,000-10,000)</li>
+                    <li>• No Live Music (Playlist): DIY playlist with sound system ($500-1,000)</li>
                   </ul>
                 </div>
 

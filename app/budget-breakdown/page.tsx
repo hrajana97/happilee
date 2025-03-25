@@ -10,7 +10,6 @@ import type { BudgetCategory, BudgetData, UserData } from "@/types/budget";
 import { cn } from "@/lib/utils";
 import { BudgetAssistant } from "@/components/budget/budget-assistant";
 import budgetStorage, { 
-  serviceMultipliers,
   type CateringStyle,
   type BarService,
   type TransportationType,
@@ -27,7 +26,20 @@ import budgetStorage, {
   type InvitationType,
   type PlannerType,
   type EntertainmentType,
-  type BeautyCoverage
+  type BeautyCoverage,
+  isCateringStyle,
+  isBarService,
+  isPhotoVideo,
+  isCoverage,
+  isFloralStyle,
+  isDiyElements,
+  isMusicChoice,
+  isBeautyStyle,
+  isTransportationType,
+  isStationeryType,
+  isSaveTheDateType,
+  isInvitationType,
+  serviceMultipliers
 } from "@/lib/budget-storage";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -415,22 +427,24 @@ export default function BudgetBreakdownPage() {
                           <div className="bg-white rounded-lg p-5 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                               <h4 className="text-sm font-semibold text-sage-700">About This Category</h4>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-sage-500">Edit via:</span>
-                                <Button variant="outline" size="sm" className="h-7">
-                                  UI
-                                </Button>
-                                <Button variant="outline" size="sm" className="h-7">
-                                  Assistant
-                                </Button>
-                              </div>
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={{
+                                  pathname: '/dashboard/budget',
+                                  query: { 
+                                    step: getCategoryStep(category.id),
+                                    prefill: 'true',
+                                    ...budgetData.preferences
+                                  }
+                                }}>
+                                  Update Preferences
+                                </Link>
+                              </Button>
                             </div>
                             <p className="text-sage-600 mb-4">{category.rationale}</p>
                             
                             <div className="border-t pt-4 mt-4">
                               <h5 className="text-sm font-medium text-sage-700 mb-2">Cost Impact of Your Choices</h5>
                               <div className="mt-6">
-                                <h3 className="text-lg font-semibold mb-3">Cost Impact of Your Choices</h3>
                                 <div className="space-y-4">
                                   {category.id === 'photography' && (
                                     <>
@@ -447,25 +461,20 @@ export default function BudgetBreakdownPage() {
                                     <>
                                       <p>Your catering choices affect costs as follows:</p>
                                       <ul className="list-disc pl-5 space-y-2">
-                                        <li>Service Style: {budgetData.preferences?.cateringStyle || 'Not specified'} - {budgetData.preferences?.cateringStyle ? serviceMultipliers.catering[budgetData.preferences.cateringStyle as CateringStyle] : 1}x base rate</li>
-                                        <li>Bar Service: {budgetData.preferences?.barService || 'Not specified'} - {budgetData.preferences?.barService ? serviceMultipliers.bar[budgetData.preferences.barService as BarService] : 1}x base rate</li>
+                                        <li>Service Style: {budgetData.preferences?.cateringStyle || 'Not specified'} - {
+                                          budgetData.preferences?.cateringStyle && 
+                                          isCateringStyle(budgetData.preferences.cateringStyle) 
+                                            ? `${serviceMultipliers.catering[budgetData.preferences.cateringStyle]}x base rate`
+                                            : '1x base rate'
+                                        }</li>
+                                        <li>Bar Service: {budgetData.preferences?.barService || 'Not specified'} - {
+                                          budgetData.preferences?.barService && 
+                                          isBarService(budgetData.preferences.barService)
+                                            ? `${serviceMultipliers.bar[budgetData.preferences.barService]}x base rate`
+                                            : '1x base rate'
+                                        }</li>
                                         <li>Guest Count Impact: {budgetData.guestCount} guests affect food quantity and staffing needs</li>
                                       </ul>
-                                      <div className="mt-4">
-                                        <Button variant="outline" size="sm" asChild>
-                                          <Link href={{
-                                            pathname: '/dashboard/budget',
-                                            query: { 
-                                              step: 'catering',
-                                              prefill: 'true',
-                                              cateringStyle: budgetData.preferences?.cateringStyle,
-                                              barService: budgetData.preferences?.barService
-                                            }
-                                          }}>
-                                            Update Catering Preferences
-                                          </Link>
-                                        </Button>
-                                      </div>
                                     </>
                                   )}
                                   
@@ -473,26 +482,39 @@ export default function BudgetBreakdownPage() {
                                     <>
                                       <p>Your transportation choices influence costs in these ways:</p>
                                       <ul className="list-disc pl-5 space-y-2">
-                                        <li>Service Type: {budgetData.preferences?.transportationType || 'Not specified'} - {budgetData.preferences?.transportationType ? serviceMultipliers.transportation[budgetData.preferences.transportationType as TransportationType] : 1}x base rate</li>
-                                        <li>Guest Count: {budgetData.preferences?.transportationGuestCount || 'Not specified'} guests requiring transportation</li>
-                                        <li>Service Duration: {budgetData.preferences?.transportationHours || 'Not specified'} hours of service needed</li>
-                                      </ul>
-                                      <div className="mt-4">
-                                        <Button variant="outline" size="sm" asChild>
-                                          <Link href={{
-                                            pathname: '/dashboard/budget',
-                                            query: { 
-                                              step: 'transportation',
-                                              prefill: 'true',
-                                              transportationType: budgetData.preferences?.transportationType,
-                                              transportationGuestCount: budgetData.preferences?.transportationGuestCount,
-                                              transportationHours: budgetData.preferences?.transportationHours
+                                        <li>Service Type: {budgetData.preferences?.transportationType || 'Not specified'} - {
+                                          (() => {
+                                            const choice = budgetData.preferences?.transportationType;
+                                            if (!choice) return 'Cost varies by service type';
+                                            if (!isTransportationType(choice)) return 'Cost varies by service type';
+                                            
+                                            switch(choice) {
+                                              case 'Guest Shuttle Service': return 'Average cost $1,500-3,000 for standard shuttle service';
+                                              case 'Wedding Party Transportation': return 'Average cost $800-1,500 for wedding party vehicles';
+                                              case 'Both': return 'Combined services $2,300-4,500';
+                                              case 'None': return 'No transportation costs';
+                                              default: return 'Cost varies by service type';
                                             }
-                                          }}>
-                                            Update Transportation Preferences
-                                          </Link>
-                                        </Button>
-                                      </div>
+                                          })()
+                                        }</li>
+                                        <li>Guest Count: {budgetData.preferences?.transportationGuestCount || '0'} guests - {
+                                          (() => {
+                                            const guestCount = parseInt(budgetData.preferences?.transportationGuestCount || '0');
+                                            if (guestCount === 0) return 'No impact on cost';
+                                            if (guestCount <= 50) return 'Single shuttle sufficient ($1,500-2,000)';
+                                            if (guestCount <= 100) return 'Two shuttles needed ($3,000-4,000)';
+                                            return `Multiple shuttles required ($${Math.round(1500 * Math.ceil(guestCount/50))}-${Math.round(2000 * Math.ceil(guestCount/50))})`;
+                                          })()
+                                        }</li>
+                                        <li>Service Duration: {budgetData.preferences?.transportationHours || 'Not specified'} hours - {
+                                          (() => {
+                                            const hours = parseInt(budgetData.preferences?.transportationHours || '0');
+                                            if (hours === 0) return 'Duration not specified';
+                                            if (hours <= 4) return 'Standard rate applies';
+                                            return `Extended service (+$200/hour after 4 hours, total additional: $${(hours - 4) * 200})`;
+                                          })()
+                                        }</li>
+                                      </ul>
                                     </>
                                   )}
                                   
@@ -500,26 +522,15 @@ export default function BudgetBreakdownPage() {
                                     <>
                                       <p>Your floral choices impact costs as follows:</p>
                                       <ul className="list-disc pl-5 space-y-2">
-                                        <li>Floral Style: {budgetData.preferences?.floralStyle || 'Not specified'} - {budgetData.preferences?.floralStyle ? serviceMultipliers.florals[budgetData.preferences.floralStyle as FloralStyle] : 1}x base rate</li>
+                                        <li>Floral Style: {budgetData.preferences?.floralStyle || 'Not specified'} - {
+                                          budgetData.preferences?.floralStyle && 
+                                          isFloralStyle(budgetData.preferences.floralStyle) 
+                                            ? `${serviceMultipliers.floral[budgetData.preferences.floralStyle]}x base rate`
+                                            : '1x base rate'
+                                        }</li>
                                         <li>DIY Elements: {budgetData.preferences?.diyElements || 'Not specified'} - {budgetData.preferences?.diyElements === 'Yes, planning DIY elements' ? 0.7 : budgetData.preferences?.diyElements === 'Maybe, still deciding' ? 0.9 : 1}x base rate</li>
                                         <li>Wedding Party Size: {budgetData.preferences?.weddingPartySize || 'Not specified'} affects bouquet and boutonniere quantities</li>
                                       </ul>
-                                      <div className="mt-4">
-                                        <Button variant="outline" size="sm" asChild>
-                                          <Link href={{
-                                            pathname: '/dashboard/budget',
-                                            query: { 
-                                              step: 'decor',
-                                              prefill: 'true',
-                                              floralStyle: budgetData.preferences?.floralStyle,
-                                              diyElements: budgetData.preferences?.diyElements,
-                                              weddingPartySize: budgetData.preferences?.weddingPartySize
-                                            }
-                                          }}>
-                                            Update Floral Preferences
-                                          </Link>
-                                        </Button>
-                                      </div>
                                     </>
                                   )}
                                   
@@ -531,10 +542,10 @@ export default function BudgetBreakdownPage() {
                                           (() => {
                                             const choice = budgetData.preferences?.entertainment;
                                             switch(choice) {
-                                              case 'DJ only': return 'Average cost $1,500-2,500';
-                                              case 'Band only': return 'Average cost $4,000-8,000';
-                                              case 'Both DJ and Band': return 'Average cost $6,000-10,000';
-                                              case 'No live music': return 'Average cost $500-1,000 (sound system rental)';
+                                              case 'DJ': return 'Average cost $1,500-2,500';
+                                              case 'Band': return 'Average cost $4,000-8,000';
+                                              case 'Both DJ & Band': return 'Average cost $6,000-10,000';
+                                              case 'No Live Music (Playlist)': return 'Average cost $500-1,000 (sound system rental)';
                                               default: return 'Average cost varies by choice';
                                             }
                                           })()
@@ -542,21 +553,6 @@ export default function BudgetBreakdownPage() {
                                         <li>Ceremony Music: {budgetData.preferences?.musicChoice || 'Not specified'}</li>
                                         <li>Guest Count Impact: {budgetData.guestCount} guests affect equipment and performance needs</li>
                                       </ul>
-                                      <div className="mt-4">
-                                        <Button variant="outline" size="sm" asChild>
-                                          <Link href={{
-                                            pathname: '/dashboard/budget',
-                                            query: { 
-                                              step: 'entertainment',
-                                              prefill: 'true',
-                                              entertainment: budgetData.preferences?.entertainment,
-                                              musicChoice: budgetData.preferences?.musicChoice
-                                            }
-                                          }}>
-                                            Update Entertainment Preferences
-                                          </Link>
-                                        </Button>
-                                      </div>
                                     </>
                                   )}
                                   
@@ -568,50 +564,40 @@ export default function BudgetBreakdownPage() {
                                         <li>Coverage: {budgetData.preferences?.beautyCoverage || 'Not specified'} affects the number of services needed</li>
                                         <li>Wedding Party Size: {budgetData.preferences?.weddingPartySize || 'Not specified'} determines total service count</li>
                                       </ul>
-                                      <div className="mt-4">
-                                        <Button variant="outline" size="sm" asChild>
-                                          <Link href={{
-                                            pathname: '/dashboard/budget',
-                                            query: { 
-                                              step: 'beauty',
-                                              prefill: 'true',
-                                              beautyStyle: budgetData.preferences?.beautyStyle,
-                                              beautyCoverage: budgetData.preferences?.beautyCoverage,
-                                              makeupFor: budgetData.preferences?.makeupFor,
-                                              makeupServices: budgetData.preferences?.makeupServices
-                                            }
-                                          }}>
-                                            Update Hair and Makeup Preferences
-                                          </Link>
-                                        </Button>
-                                      </div>
                                     </>
                                   )}
                                   
                                   {category.id === 'stationery' && (
                                     <>
-                                      <p>Your stationery choices impact costs in these ways:</p>
+                                      <p>Your stationery choices affect costs in these ways:</p>
                                       <ul className="list-disc pl-5 space-y-2">
-                                        <li>Stationery Type: {budgetData.preferences?.stationeryType || 'Not specified'} - {budgetData.preferences?.stationeryType ? serviceMultipliers.stationery[budgetData.preferences.stationeryType as StationeryType] : 1}x base rate</li>
-                                        <li>Save the Dates: {budgetData.preferences?.saveTheDateType || 'Not specified'} - {budgetData.preferences?.saveTheDateType ? serviceMultipliers.saveTheDate[budgetData.preferences.saveTheDateType as SaveTheDateType] : 1}x base rate</li>
-                                        <li>Guest Count Impact: {budgetData.guestCount} guests affect invitation quantity needs</li>
-                                      </ul>
-                                      <div className="mt-4">
-                                        <Button variant="outline" size="sm" asChild>
-                                          <Link href={{
-                                            pathname: '/dashboard/budget',
-                                            query: { 
-                                              step: 'stationery',
-                                              prefill: 'true',
-                                              stationeryType: budgetData.preferences?.stationeryType,
-                                              saveTheDateType: budgetData.preferences?.saveTheDateType,
-                                              invitationType: budgetData.preferences?.invitationType
+                                        <li>Save the Dates: {budgetData.preferences?.saveTheDate || 'Not specified'} - {
+                                          (() => {
+                                            const choice = budgetData.preferences?.saveTheDate;
+                                            switch(choice) {
+                                              case 'digital': return 'Digital design and delivery $100-300';
+                                              case 'printed': return 'Printed cards and postage $300-800';
+                                              case 'none': return 'No cost';
+                                              default: return 'Cost varies by choice';
                                             }
-                                          }}>
-                                            Update Stationery Preferences
-                                          </Link>
-                                        </Button>
-                                      </div>
+                                          })()
+                                        }</li>
+                                        <li>Invitations: {budgetData.preferences?.invitationType || 'Not specified'} - {
+                                          (() => {
+                                            const choice = budgetData.preferences?.invitationType;
+                                            switch(choice) {
+                                              case 'digital': return 'Digital suite $200-500';
+                                              case 'printed': return 'Printed suite $800-2,000';
+                                              case 'both': return 'Combined digital and print $1,000-2,500';
+                                              default: return 'Cost varies by choice';
+                                            }
+                                          })()
+                                        }</li>
+                                        <li>Guest Count Impact: {budgetData.guestCount} guests - {
+                                          budgetData.preferences?.invitationType === 'digital' ? 'Minimal impact on cost' :
+                                          `Affects quantity needed (approximately $${Math.round(3 * budgetData.guestCount)}-${Math.round(5 * budgetData.guestCount)} for printing and postage)`
+                                        }</li>
+                                      </ul>
                                     </>
                                   )}
 
@@ -635,32 +621,118 @@ export default function BudgetBreakdownPage() {
                                           Total Attire Budget: {formatCurrency(category.estimatedCost)}
                                         </p>
                                       </div>
-                                      <div className="mt-4">
-                                        <Button 
-                                          variant="outline" 
-                                          size="sm"
-                                          asChild
-                                        >
-                                          <Link 
-                                            href={{
-                                              pathname: '/dashboard/budget',
-                                              query: { 
-                                                step: 'attire',
-                                                prefill: 'true',
-                                                dressBudget: budgetData.preferences?.dressBudget,
-                                                suitBudget: budgetData.preferences?.suitBudget,
-                                                accessoriesBudget: budgetData.preferences?.accessoriesBudget,
-                                                needAlterations: budgetData.preferences?.needAlterations,
-                                                needReceptionDress: budgetData.preferences?.needReceptionDress,
-                                                receptionDressBudget: budgetData.preferences?.receptionDressBudget,
-                                                suitCount: budgetData.preferences?.suitCount
-                                              }
-                                            }}
-                                          >
-                                            Update Attire Preferences
-                                          </Link>
-                                        </Button>
-                                      </div>
+                                    </>
+                                  )}
+
+                                  {category.id === 'music' && (
+                                    <>
+                                      <p>Your music choices affect costs in these ways:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Reception Entertainment: {budgetData.preferences?.musicChoice || 'Not specified'} - {
+                                          (() => {
+                                            const choice = budgetData.preferences?.musicChoice;
+                                            switch(choice) {
+                                              case 'DJ': return 'Average cost $1,500-2,500';
+                                              case 'Band': return 'Average cost $4,000-8,000';
+                                              case 'Both DJ & Band': return 'Average cost $6,000-10,000';
+                                              case 'No Live Music (Playlist)': return 'Average cost $500-1,000 (sound system rental)';
+                                              default: return 'Average cost varies by choice';
+                                            }
+                                          })()
+                                        }</li>
+                                        <li>Ceremony Music: {budgetData.preferences?.ceremonyMusic || 'Not specified'} - {
+                                          (() => {
+                                            const choice = budgetData.preferences?.ceremonyMusic;
+                                            switch(choice) {
+                                              case 'Live Music': return 'Additional $800-1,200';
+                                              case 'No Live - Will Use Recorded Track': return 'Additional $100-300 (equipment rental)';
+                                              case 'None': return 'No additional cost';
+                                              default: return 'Cost varies by choice';
+                                            }
+                                          })()
+                                        }</li>
+                                        <li>Guest Count Impact: {budgetData.guestCount} guests affect equipment and performance needs</li>
+                                      </ul>
+                                    </>
+                                  )}
+
+                                  {category.id === 'floral' && (
+                                    <>
+                                      <p>Your floral choices affect costs in these ways:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Floral Style: {budgetData.preferences?.floralStyle || 'Not specified'} - {
+                                          (() => {
+                                            const choice = budgetData.preferences?.floralStyle;
+                                            switch(choice) {
+                                              case 'Fresh Flowers (Premium)': return 'Premium rate ($3,000-6,000 base)';
+                                              case 'Artificial Flowers (Budget-Friendly)': return 'Budget rate ($1,000-3,000 base)';
+                                              case 'Mixed Fresh & Artificial': return 'Mid-range rate ($2,000-4,500 base)';
+                                              default: return 'Base rate varies by choice';
+                                            }
+                                          })()
+                                        }</li>
+                                        <li>Wedding Party Size: {budgetData.preferences?.weddingPartySize || 'Not specified'} - {
+                                          (() => {
+                                            const size = budgetData.preferences?.weddingPartySize;
+                                            switch(size) {
+                                              case 'Small (1-4 people)': return 'Personal flowers $400-800';
+                                              case 'Medium (5-8 people)': return 'Personal flowers $800-1,600';
+                                              case 'Large (9+ people)': return 'Personal flowers $1,600-2,400';
+                                              default: return 'Cost varies by party size';
+                                            }
+                                          })()
+                                        }</li>
+                                        <li>Ceremony Decor: {budgetData.preferences?.ceremonyDecorLevel || 'Not specified'} - {
+                                          (() => {
+                                            const level = budgetData.preferences?.ceremonyDecorLevel;
+                                            switch(level) {
+                                              case 'Minimal': return 'Basic setup $500-1,000';
+                                              case 'Standard': return 'Standard setup $1,000-2,000';
+                                              case 'Elaborate': return 'Full design $2,000-4,000';
+                                              default: return 'Cost varies by decor level';
+                                            }
+                                          })()
+                                        }</li>
+                                        <li>Additional Decor Areas: {budgetData.preferences?.additionalDecorAreas || 'Not specified'} - {
+                                          (() => {
+                                            const areas = budgetData.preferences?.additionalDecorAreas;
+                                            switch(areas) {
+                                              case 'None': return 'No additional cost';
+                                              case 'Some': return 'Additional $500-1,000';
+                                              case 'Extensive': return 'Additional $1,000-2,500';
+                                              default: return 'Cost varies by areas added';
+                                            }
+                                          })()
+                                        }</li>
+                                      </ul>
+                                    </>
+                                  )}
+
+                                  {category.id === 'beauty' && (
+                                    <>
+                                      <p>Your beauty service choices affect costs in these ways:</p>
+                                      <ul className="list-disc pl-5 space-y-2">
+                                        <li>Service Level: {budgetData.preferences?.beautyStyle || 'Not specified'} - {
+                                          (() => {
+                                            const style = budgetData.preferences?.beautyStyle;
+                                            switch(style) {
+                                              case 'DIY': return 'Product and consultation cost $200-400';
+                                              case 'Bride Only': return 'Professional services $600-1,000';
+                                              case 'Bride and Party': return `Full party services $${Math.round(600 * 1.8)}-${Math.round(1000 * 1.8)}`;
+                                              default: return 'Cost varies by service level';
+                                            }
+                                          })()
+                                        }</li>
+                                        {budgetData.preferences?.beautyStyle === 'Bride and Party' && (
+                                          <li>Party Size: {budgetData.preferences?.bridesmaidCount || '0'} bridesmaids at $150-200 per person</li>
+                                        )}
+                                        <li>Includes: {
+                                          budgetData.preferences?.beautyStyle === 'DIY' ? 'Consultation and product recommendations' :
+                                          budgetData.preferences?.beautyStyle === 'Bride Only' ? 'Trial and day-of services for bride' :
+                                          budgetData.preferences?.beautyStyle === 'Bride and Party' ? 'Trials for bride, day-of services for entire party' :
+                                          'Services vary by package'
+                                        }</li>
+                                      </ul>
                                     </>
                                   )}
                                 </div>

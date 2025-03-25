@@ -36,17 +36,17 @@ export type BudgetPreferences = {
   musicHours?: string
   makeupFor?: string[]
   makeupServices?: string[]
-  transportationType?: string
+  transportationType?: 'Standard sedan' | 'Luxury Sedan' | 'SUV' | 'Limo' | 'Party Bus'
   transportationHours?: string
-  transportationGuestCount?: number
+  transportationGuestCount?: string
   weddingPartySize?: string
   ceremonyDecorLevel?: string
   additionalDecorAreas?: string
   entertainment?: string
   beautyStyle?: string
   stationeryType?: string
-  saveTheDateType?: string
-  invitationType?: string
+  saveTheDate?: 'digital' | 'printed' | 'none'
+  invitationType?: 'digital' | 'printed' | 'both'
   bridesmaidCount?: string
   includeFavors?: boolean
   favorCostPerPerson?: string
