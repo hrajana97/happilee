@@ -29,6 +29,7 @@ export type BudgetPreferences = {
   floralStyle?: string
   diyElements?: string
   musicChoice?: string
+  ceremonyMusic?: 'Live Music' | 'No Live - Will Use Recorded Track' | 'None'
   beautyCoverage?: string
   planningAssistance?: string
   coverageHours?: string

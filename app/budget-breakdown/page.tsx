@@ -95,6 +95,8 @@ export default function BudgetBreakdownPage() {
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showAssistantIndicator, setShowAssistantIndicator] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
 
   useEffect(() => {
     try {
@@ -322,6 +324,54 @@ export default function BudgetBreakdownPage() {
     }, 100);
   };
 
+  const handleEstimatedCostEdit = (category: BudgetCategory) => {
+    setEditingId(category.id);
+    setEditingValue(category.estimatedCost.toString());
+  };
+
+  const handleEstimatedCostSave = (category: BudgetCategory) => {
+    const newValue = parseInt(editingValue);
+    if (!isNaN(newValue) && newValue >= 0) {
+      const oldValue = category.estimatedCost;
+      const difference = newValue - oldValue;
+      
+      // Update the category
+      const updatedCategories = budgetData.calculatedBudget?.categories.map(c => 
+        c.id === category.id 
+          ? {
+              ...c,
+              estimatedCost: newValue,
+              remaining: newValue - (c.actualCost || 0),
+              percentage: (newValue / (budgetData.totalBudget + difference)) * 100
+            }
+          : c
+      ) || [];
+
+      // Update the budget data
+      const updatedBudgetData = {
+        ...budgetData,
+        calculatedBudget: {
+          ...budgetData.calculatedBudget,
+          categories: updatedCategories
+        },
+        totalBudget: budgetData.totalBudget + difference,
+        lastUpdated: new Date().toISOString()
+      };
+
+      setBudgetData(updatedBudgetData);
+      budgetStorage.setBudgetData(updatedBudgetData);
+    }
+    setEditingId(null);
+  };
+
+  const handleEstimatedCostKeyDown = (e: React.KeyboardEvent, category: BudgetCategory) => {
+    if (e.key === 'Enter') {
+      handleEstimatedCostSave(category);
+    } else if (e.key === 'Escape') {
+      setEditingId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-sage-100/80 via-[#E8F3E9] to-white p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
@@ -474,8 +524,26 @@ export default function BudgetBreakdownPage() {
                       {category.id === 'hair_makeup' ? 'Hair and Makeup' : category.name}
                     </span>
                   </div>
-                  <div className="col-span-4 font-medium">
-                    {formatCurrency(category.estimatedCost)}
+                  <div 
+                    className="col-span-4 font-medium cursor-pointer hover:bg-sage-50 p-2 rounded"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEstimatedCostEdit(category);
+                    }}
+                  >
+                    {editingId === category.id ? (
+                      <Input
+                        type="number"
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        onBlur={() => handleEstimatedCostSave(category)}
+                        onKeyDown={(e) => handleEstimatedCostKeyDown(e, category)}
+                        className="w-24"
+                        autoFocus
+                      />
+                    ) : (
+                      formatCurrency(category.estimatedCost)
+                    )}
                     {category.id === 'catering' && (
                       <span className="text-sm text-sage-600 ml-2">
                         ({formatCurrency(Math.round(category.estimatedCost / budgetData.guestCount))} per person)

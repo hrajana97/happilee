@@ -69,6 +69,7 @@ const BudgetTable: React.FC<BudgetTableProps> = ({
   onUpdateTotalBudget
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingValue, setEditingValue] = useState<string>('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [showAdjustments, setShowAdjustments] = useState(false)
   const [adjustedCategory, setAdjustedCategory] = useState<BudgetCategory | null>(null)
@@ -208,6 +209,38 @@ const BudgetTable: React.FC<BudgetTableProps> = ({
     ? categoryToRemove.estimatedCost - reallocationTargets.reduce((sum, target) => sum + target.amount, 0)
     : 0
 
+  const handleEstimatedCostEdit = (category: BudgetCategory) => {
+    setEditingId(category.id)
+    setEditingValue(category.estimatedCost.toString())
+  }
+
+  const handleEstimatedCostSave = (category: BudgetCategory) => {
+    const newValue = parseInt(editingValue)
+    if (!isNaN(newValue) && newValue >= 0) {
+      const oldValue = category.estimatedCost
+      const difference = newValue - oldValue
+      
+      // Update the category
+      onUpdateCategory(category.id, {
+        estimatedCost: newValue,
+        remaining: newValue - (category.actualCost || 0),
+        percentage: (newValue / (totalBudget + difference)) * 100
+      })
+
+      // Update total budget
+      onUpdateTotalBudget(totalBudget + difference)
+    }
+    setEditingId(null)
+  }
+
+  const handleEstimatedCostKeyDown = (e: React.KeyboardEvent, category: BudgetCategory) => {
+    if (e.key === 'Enter') {
+      handleEstimatedCostSave(category)
+    } else if (e.key === 'Escape') {
+      setEditingId(null)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="rounded-lg border">
@@ -243,22 +276,26 @@ const BudgetTable: React.FC<BudgetTableProps> = ({
                         <span className="font-medium">{category.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="px-2 py-3 sm:px-4 sm:py-4">{formatCurrency(category.estimatedCost)}</TableCell>
-                    <TableCell className="px-2 py-3 sm:px-4 sm:py-4">
+                    <TableCell 
+                      className="px-2 py-3 sm:px-4 sm:py-4 cursor-pointer hover:bg-sage-50"
+                      onClick={() => handleEstimatedCostEdit(category)}
+                    >
                       {editingId === category.id ? (
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            defaultValue={category.actualCost}
-                            className="w-24"
-                            onBlur={(e) => handleSave(category, Number(e.target.value))}
-                          />
-                        </div>
+                        <Input
+                          type="number"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          onBlur={() => handleEstimatedCostSave(category)}
+                          onKeyDown={(e) => handleEstimatedCostKeyDown(e, category)}
+                          className="w-24"
+                          autoFocus
+                        />
                       ) : (
-                        formatCurrency(category.actualCost)
+                        formatCurrency(category.estimatedCost)
                       )}
                     </TableCell>
-                    <TableCell className={category.remaining < 0 ? 'text-red-500' : ''} className="px-2 py-3 sm:px-4 sm:py-4">
+                    <TableCell className="px-2 py-3 sm:px-4 sm:py-4">{formatCurrency(category.actualCost)}</TableCell>
+                    <TableCell className={`px-2 py-3 sm:px-4 sm:py-4 ${category.remaining < 0 ? 'text-red-500' : ''}`}>
                       {formatCurrency(category.remaining)}
                     </TableCell>
                     <TableCell className="px-2 py-3 sm:px-4 sm:py-4">
@@ -279,7 +316,7 @@ const BudgetTable: React.FC<BudgetTableProps> = ({
                       <TableCell colSpan={6} className="bg-sage-50">
                         <div className="p-4 space-y-4">
                           <div className="space-y-2">
-                            {category.priority === 'high' && (
+                            {(category as BudgetCategory).priority === 'high' && (
                               <div className="text-sm font-medium text-sage-700">
                                 ⭐ Prioritized Category
                               </div>
