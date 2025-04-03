@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarPlus, CalendarClock, MapPin, DollarSign, Camera, Music, Cake, Plus } from "lucide-react"
+import { CalendarPlus, CalendarClock, MapPin, DollarSign, Camera, Music, Cake, Plus, CheckCircle2, CalendarDays } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { Loader2 } from "lucide-react"
@@ -174,17 +174,19 @@ export default function WeddingCalendarPage() {
 
   return (
     <ErrorBoundary>
-      <div className="p-8">
-        <div className="mx-auto max-w-7xl">
+      <div className="p-4">
+        <div className="mx-auto">
           <div className="flex items-center justify-between mb-8">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-4 w-4" />
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/dashboard">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
               </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-semibold text-sage-900">Wedding Calendar</h1>
-              <p className="mt-2 text-sage-600">Keep track of all your wedding-related dates</p>
+              <div>
+                <h1 className="text-2xl font-semibold text-sage-900">Wedding Calendar</h1>
+                <p className="mt-2 text-sage-600">Keep track of all your wedding-related dates</p>
+              </div>
             </div>
             <div className="flex gap-2">
               <Dialog open={showSync} onOpenChange={setShowSync}>
@@ -300,22 +302,44 @@ export default function WeddingCalendarPage() {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-            <Card>
-              <CardContent className="p-6">
-                <Calendar 
-                  mode="single" 
-                  selected={date} 
-                  onSelect={handleDateSelect} 
-                  className="rounded-md border"
-                  modifiers={{ hasEvent: eventDates }}
-                />
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 lg:grid-cols-[3fr_1fr]">
+            <div className="space-y-4">
+              <Card className="border-0 shadow-none bg-transparent">
+                <CardContent className="p-0">
+                  <Calendar 
+                    mode="single" 
+                    selected={date} 
+                    onSelect={handleDateSelect} 
+                    className="rounded-md w-full h-full min-h-[500px]"
+                    modifiers={{ hasEvent: eventDates }}
+                    classNames={{
+                      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
+                      month: "space-y-4 w-full",
+                      caption: "flex justify-center pt-1 relative items-center text-lg font-semibold",
+                      caption_label: "text-sm font-medium",
+                      nav: "space-x-1 flex items-center",
+                      nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                      nav_button_previous: "absolute left-1",
+                      nav_button_next: "absolute right-1",
+                      table: "w-full border-collapse space-y-1",
+                      head_row: "flex",
+                      head_cell: "text-sage-600 rounded-md w-[14.28%] font-normal text-sm",
+                      row: "flex w-full mt-2",
+                      cell: "text-center text-sm relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-sage-100/50 [&:has([aria-selected])]:bg-sage-100 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20 h-11 w-[14.28%]",
+                      day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-sage-100 rounded-md transition-all",
+                      day_range_end: "day-range-end",
+                      day_selected: "bg-[#738678] text-white hover:bg-[#738678] hover:text-white focus:bg-[#738678] focus:text-white",
+                      day_today: "bg-sage-100 text-sage-900",
+                      day_outside: "day-outside opacity-50",
+                      day_disabled: "text-sage-500 opacity-50",
+                      day_hidden: "invisible",
+                    }}
+                  />
+                </CardContent>
+              </Card>
 
-            <div className="space-y-6">
               <Card>
-                <CardHeader>
+                <CardHeader className="px-4 py-3">
                   <div className="flex items-center justify-between">
                     <CardTitle>Upcoming Events</CardTitle>
                     <Select value={selectedEventType} onValueChange={setSelectedEventType}>
@@ -332,37 +356,133 @@ export default function WeddingCalendarPage() {
                     </Select>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                <CardContent className="px-4">
+                  <div className="grid gap-4">
                     {upcomingEvents.map((event) => (
-                      <div key={event.id} className="flex items-start gap-4 rounded-lg border p-4">
-                        <div className="rounded-full bg-sage-100 p-2">
+                      <div key={event.id} className="flex items-start gap-4 rounded-lg border p-4 hover:bg-sage-50 transition-colors">
+                        <div className="rounded-full bg-sage-100 p-3">
                           {event.icon ? (
-                            <event.icon className="h-4 w-4 text-sage-600" />
+                            <event.icon className="h-5 w-5 text-sage-600" />
                           ) : (
-                            <CalendarClock className="h-4 w-4 text-sage-600" />
+                            <CalendarClock className="h-5 w-5 text-sage-600" />
                           )}
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-medium">{event.title}</h3>
+                          <div className="flex items-center justify-between mb-1">
+                            <h3 className="text-lg font-medium text-sage-900">{event.title}</h3>
                             <Badge variant={event.type === "payment" ? "destructive" : "secondary"}>{event.type}</Badge>
                           </div>
-                          <p className="text-sm text-sage-600">{event.date.toLocaleDateString()}</p>
+                          <p className="text-sm text-sage-600 mb-2">{event.date.toLocaleDateString()}</p>
                           {event.location && (
-                            <p className="text-sm text-sage-600 flex items-center gap-1 mt-1">
-                              <MapPin className="h-3 w-3" /> {event.location}
+                            <p className="text-sm text-sage-600 flex items-center gap-1 mb-1">
+                              <MapPin className="h-4 w-4" /> {event.location}
                             </p>
                           )}
                           {event.amount && (
-                            <p className="text-sm text-sage-600 flex items-center gap-1 mt-1">
-                              <DollarSign className="h-3 w-3" /> ${event.amount.toLocaleString()}
+                            <p className="text-sm text-sage-600 flex items-center gap-1 mb-1">
+                              <DollarSign className="h-4 w-4" /> ${event.amount.toLocaleString()}
                             </p>
                           )}
-                          {event.description && <p className="text-sm text-sage-600 mt-1">{event.description}</p>}
+                          {event.description && (
+                            <p className="text-sm text-sage-600 mt-2 border-t border-sage-100 pt-2">
+                              {event.description}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
+                    {upcomingEvents.length === 0 && (
+                      <div className="text-center py-8 text-sage-600">
+                        No events found
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="px-4 py-3">
+                  <CardTitle>Event Categories</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 rounded-lg hover:bg-sage-50">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-blue-100 p-2">
+                          <CalendarClock className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <span>Appointments</span>
+                      </div>
+                      <Badge>{upcomingEvents.filter(e => e.type === "appointment").length}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg hover:bg-sage-50">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-red-100 p-2">
+                          <DollarSign className="h-4 w-4 text-red-600" />
+                        </div>
+                        <span>Payments</span>
+                      </div>
+                      <Badge>{upcomingEvents.filter(e => e.type === "payment").length}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg hover:bg-sage-50">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-yellow-100 p-2">
+                          <CheckCircle2 className="h-4 w-4 text-yellow-600" />
+                        </div>
+                        <span>Tasks</span>
+                      </div>
+                      <Badge>{upcomingEvents.filter(e => e.type === "task").length}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded-lg hover:bg-sage-50">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-purple-100 p-2">
+                          <CalendarDays className="h-4 w-4 text-purple-600" />
+                        </div>
+                        <span>Deadlines</span>
+                      </div>
+                      <Badge>{upcomingEvents.filter(e => e.type === "deadline").length}</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="px-4 py-3">
+                  <CardTitle>Quick Stats</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-sage-600">Events This Month</p>
+                      <p className="text-2xl font-semibold text-sage-900">
+                        {upcomingEvents.filter(e => {
+                          const now = new Date()
+                          return e.date.getMonth() === now.getMonth() && e.date.getFullYear() === now.getFullYear()
+                        }).length}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-sage-600">Upcoming Payments</p>
+                      <p className="text-2xl font-semibold text-sage-900">
+                        ${upcomingEvents
+                          .filter(e => e.type === "payment")
+                          .reduce((sum, e) => sum + (e.amount || 0), 0)
+                          .toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-sage-600">Next Event</p>
+                      <p className="text-lg font-medium text-sage-900">
+                        {upcomingEvents.length > 0 ? upcomingEvents[0].title : "No upcoming events"}
+                      </p>
+                      {upcomingEvents.length > 0 && (
+                        <p className="text-sm text-sage-600">
+                          {upcomingEvents[0].date.toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

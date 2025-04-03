@@ -856,6 +856,22 @@ const getLocationCostFactor = (location: LocationData): number => {
   return locationFactor;
 };
 
+// Add function to get location explanation
+const getLocationExplanation = (location: LocationData, locationFactor: number): string => {
+  const normalizedCity = normalizeCity(location.city);
+  const locationKey = location.state 
+    ? `${normalizedCity}, ${location.state}`
+    : normalizedCity;
+
+  if (locationFactor === 1.0) {
+    return `Your location (${locationKey}) has average wedding costs compared to the national average. This means your budget will go further here than in major metropolitan areas.`;
+  } else if (locationFactor > 1.0) {
+    return `Your location (${locationKey}) has higher than average wedding costs (${locationFactor}x the national average). This is typical for major metropolitan areas and popular wedding destinations.`;
+  } else {
+    return `Your location (${locationKey}) has lower than average wedding costs (${locationFactor}x the national average). This means your budget will go further here than in major cities.`;
+  }
+};
+
 const budgetStorage = {
   setBudgetData: (data: BudgetData) => {
     if (!isBrowser) {
@@ -947,6 +963,7 @@ const budgetStorage = {
 
       // Get location factor dynamically
       const locationFactor = getLocationCostFactor(location)
+      const locationExplanation = getLocationExplanation(location, locationFactor)
 
       // Calculate seasonal factor
       const seasonalFactor = location.weddingDate 
@@ -1083,6 +1100,7 @@ const budgetStorage = {
         rationale: {
           totalBudget: `Suggested budget range: ${formatCurrency(budgetRanges.min)} - ${formatCurrency(budgetRanges.max)}`,
           locationFactor,
+          locationExplanation,
           seasonalFactor,
           notes: budgetRanges.adjustments
         },

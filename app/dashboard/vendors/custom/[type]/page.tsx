@@ -513,20 +513,9 @@ export default function CustomVendorPage() {
                 </Link>
               </Button>
             )}
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedVendor(null)
-                setShowQuoteDialog(true)
-              }}
-              className="bg-[#738678] hover:bg-[#738678]/90 text-white border-0"
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Quote Request Template
-            </Button>
             <Dialog open={showAddVendor} onOpenChange={setShowAddVendor}>
               <DialogTrigger asChild>
-                <Button className="bg-[#738678] hover:bg-[#738678]/90 text-white">
+                <Button className="bg-[#738678] hover:bg-[#738678]/90 text-white border-0">
                   <Plus className="mr-2 h-4 w-4" />
                   Add {vendorType}
                 </Button>
@@ -758,7 +747,7 @@ function CustomVendorCard({ vendor, onContact }: CustomVendorCardProps) {
           )}
           <Button
             variant={vendor.contacted ? "outline" : "default"}
-            className={!vendor.contacted ? "bg-[#738678] hover:bg-[#738678]/90 text-white" : ""}
+            className={!vendor.contacted ? "bg-[#738678] hover:bg-[#738678]/90 text-white border-0" : ""}
             onClick={() => onContact(vendor)}
           >
             <Mail className="h-4 w-4 mr-2" />
@@ -790,7 +779,7 @@ function CustomVendorCard({ vendor, onContact }: CustomVendorCardProps) {
           </div>
           <AICommunicationSummary
             vendorName={vendor.name}
-            lastContact={vendor.lastContact}
+            lastContact={vendor.lastContact ?? null}
             emailCount={vendor.emailThread}
             status={vendor.contacted ? "in_progress" : "not_started"}
             nextStep={vendor.contacted ? "Follow up on services and pricing details" : "Initial contact"}

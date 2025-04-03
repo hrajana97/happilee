@@ -13,6 +13,7 @@ import {
   Wallet,
   Palette,
   Store,
+  CalendarDays,
 } from "lucide-react"
 import Link from "next/link"
 import { storage } from "@/lib/storage"
@@ -83,12 +84,47 @@ const demoData: UserData = {
   guestCount: 120,
 }
 
+interface WeddingEvent {
+  id: string
+  title: string
+  date: Date
+  type: "appointment" | "deadline" | "payment" | "task"
+  description?: string
+  location?: string
+  amount?: number
+}
+
 export default function DashboardPage() {
   const [userData, setUserData] = useState<Partial<UserData>>({})
+  const [upcomingEvents, setUpcomingEvents] = useState<WeddingEvent[]>([])
 
   useEffect(() => {
     const storedData = storage.getUserData()
     setUserData(Object.keys(storedData).length > 0 ? storedData : demoData)
+
+    // Get upcoming events from local storage or use demo data
+    const today = new Date()
+    const inOneWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+    const inTwoWeeks = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000)
+    const demoEvents: WeddingEvent[] = [
+      {
+        id: "1",
+        title: "Venue Final Payment",
+        date: inTwoWeeks,
+        type: "payment",
+        description: "Final payment due to Grand Plaza Hotel",
+        amount: 3000,
+      },
+      {
+        id: "2",
+        title: "Cake Tasting",
+        date: inOneWeek,
+        type: "appointment",
+        location: "Sweet Delights Bakery",
+        description: "Sample wedding cake flavors and discuss design",
+      },
+    ]
+    setUpcomingEvents(demoEvents)
   }, [])
 
   const formatDate = (dateString: string) => {
@@ -179,6 +215,62 @@ export default function DashboardPage() {
                       date={userData.weddingDate}
                       className="border-none shadow-none bg-transparent"
                     />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-sage-50/80 to-sage-100/60 border-sage-200/50 hover:shadow-lg transition-all duration-300">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-sage-100/60">
+                        <CalendarDays className="h-5 w-5 text-[#4A5D4E]" />
+                      </div>
+                      <CardTitle className="text-lg text-[#4A5D4E]">Upcoming Events</CardTitle>
+                    </div>
+                    <Link href="/dashboard/calendar">
+                      <div className="text-sm text-sage-600 hover:text-sage-700">View Calendar →</div>
+                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {upcomingEvents.length === 0 ? (
+                      <p className="text-sm text-sage-600">No upcoming events</p>
+                    ) : (
+                      upcomingEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          className="flex items-start gap-3 rounded-lg bg-white/80 p-3 backdrop-blur-sm border border-sage-200/50"
+                        >
+                          <div className="rounded-full bg-sage-100/60 p-2">
+                            {event.type === "payment" ? (
+                              <DollarSign className="h-4 w-4 text-[#4A5D4E]" />
+                            ) : (
+                              <CalendarClock className="h-4 w-4 text-[#4A5D4E]" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-medium text-[#4A5D4E]">{event.title}</h3>
+                            <p className="text-sm text-sage-600">
+                              {event.date.toLocaleDateString("en-US", {
+                                month: "long",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </p>
+                            {event.location && (
+                              <p className="text-xs text-sage-600 mt-1">{event.location}</p>
+                            )}
+                            {event.amount && (
+                              <p className="text-xs text-sage-600 mt-1">
+                                Amount: {formatCurrency(event.amount)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>

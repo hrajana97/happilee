@@ -5,6 +5,7 @@ import { Camera, Music, Utensils, Flower2, Car, Cake, Wine, Users } from "lucide
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { VendorCategory } from "@/app/dashboard/vendors/[categoryId]/page"
+import { cn } from "@/lib/utils"
 
 type VendorCategoriesProps = {
   selectedCategory: VendorCategory | null
@@ -84,18 +85,21 @@ export function VendorCategories({ selectedCategory, onSelectCategory, initialCa
             <Button
               key={category.id}
               variant={selectedCategory?.id === category.id ? "default" : "outline"}
-              className="w-full justify-start"
+              className={cn(
+                "w-full justify-start",
+                selectedCategory?.id === category.id && "bg-sage-600 text-white hover:bg-sage-700"
+              )}
               onClick={() => onSelectCategory(category)}
             >
               {IconComponent && <IconComponent className="mr-2 h-4 w-4" />}
               <span className="flex-1 text-left">{category.name}</span>
               {category.status === "booked" && (
-                <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                <span className="ml-2 rounded-full bg-sage-100 px-2 py-0.5 text-xs font-medium text-sage-800">
                   Booked
                 </span>
               )}
               {category.status === "searching" && (
-                <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                <span className="ml-2 rounded-full bg-sage-50 px-2 py-0.5 text-xs font-medium text-sage-600">
                   Searching
                 </span>
               )}

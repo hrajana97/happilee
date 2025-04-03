@@ -70,6 +70,7 @@ export interface CalculatedBudget {
   rationale: {
     totalBudget: string;
     locationFactor: number;
+    locationExplanation: string;
     seasonalFactor: number;
     notes: string[];
   };
