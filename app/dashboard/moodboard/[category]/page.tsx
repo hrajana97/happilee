@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { SwipeCard } from "@/components/moodboard/swipe-card"
-import { ColorPalette } from "@/components/moodboard/color-palette"
+import { ColorPaletteDisplay } from "@/components/moodboard/color-palette"
 import type { FlowerImage, MoodboardCollection } from "@/types/moodboard"
 import { ArrowLeft, Tag, Share2, Bookmark, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -188,7 +188,7 @@ export default function MoodboardCategoryPage() {
           <div className="space-y-6">
             <Card className="p-6">
               <h2 className="text-lg font-semibold mb-4">Color Palette</h2>
-              <ColorPalette
+              <ColorPaletteDisplay
                 primary={sampleCollections[0].colorPalette.primary}
                 secondary={sampleCollections[0].colorPalette.secondary}
                 accent={sampleCollections[0].colorPalette.accent}

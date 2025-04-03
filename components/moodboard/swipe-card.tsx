@@ -3,15 +3,17 @@
 import { motion } from 'framer-motion'
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Heart, X } from 'lucide-react'
+import { Heart, X, Bookmark, Tag } from 'lucide-react'
 import type { FlowerImage } from '@/types/moodboard'
 
 interface SwipeCardProps {
   image: FlowerImage
   onSwipe: (imageId: string, direction: 'left' | 'right') => void
+  onSaveForLater: (imageId: string) => void
+  onAddTag: (imageId: string) => void
 }
 
-export function SwipeCard({ image, onSwipe }: SwipeCardProps) {
+export function SwipeCard({ image, onSwipe, onSaveForLater, onAddTag }: SwipeCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -37,6 +39,24 @@ export function SwipeCard({ image, onSwipe }: SwipeCardProps) {
               onClick={() => onSwipe(image.id, 'right')}
             >
               <Heart className="h-8 w-8 text-green-500" />
+            </Button>
+          </div>
+          <div className="absolute right-4 top-4 z-10 flex gap-2">
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-10 w-10 rounded-full bg-white/80 backdrop-blur-sm"
+              onClick={() => onSaveForLater(image.id)}
+            >
+              <Bookmark className="h-5 w-5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-10 w-10 rounded-full bg-white/80 backdrop-blur-sm"
+              onClick={() => onAddTag(image.id)}
+            >
+              <Tag className="h-5 w-5" />
             </Button>
           </div>
           <div className="h-full pt-24">
