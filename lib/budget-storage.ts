@@ -1049,12 +1049,15 @@ const budgetStorage = {
             const barService = preferences?.barService && isBarService(preferences.barService)
               ? serviceMultipliers.bar[preferences.barService]
               : 1.0;
-            const perPersonCost = basePerPersonCost * cateringStyle * barService;
-            estimatedCost = Math.round(perPersonCost * guestCount);
+            
+            // Apply multipliers to base cost in a controlled way
+            const adjustedPerPersonCost = basePerPersonCost * Math.min(cateringStyle * barService, 2.0); // Cap combined service multipliers
+            const locationAdjustedCost = adjustedPerPersonCost * Math.min(locationFactor, 1.5); // Cap location impact
+            estimatedCost = Math.round(locationAdjustedCost * guestCount);
             percentage = (estimatedCost / totalBudget) * 100;
 
             // Add per-person cost to the rationale
-            const rationale = `Total catering cost for ${guestCount} guests at ${formatCurrency(perPersonCost)} per person. ` +
+            const rationale = `Total catering cost for ${guestCount} guests at ${formatCurrency(locationAdjustedCost)} per person. ` +
               `Includes ${preferences?.cateringStyle || 'standard'} service style and ${preferences?.barService || 'standard bar'} service.`;
 
             return {
@@ -1069,7 +1072,7 @@ const budgetStorage = {
               description: categoryInfo.scalingExplanation,
               budgetingTips: [],
               priority,
-              perPersonCost
+              perPersonCost: estimatedCost / guestCount
             }
           } else if (name === 'transportation' && preferences?.transportationType === 'None') {
             estimatedCost = 0;
