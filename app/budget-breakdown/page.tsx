@@ -101,6 +101,11 @@ export default function BudgetBreakdownPage() {
   useEffect(() => {
     try {
       const userData = storage.getUserData() as UserData;
+      if (!userData || !userData.calculatedBudget) {
+        // Redirect to budget survey if no data exists
+        window.location.href = '/dashboard/budget';
+        return;
+      }
       if (userData) {
         const transformedData: BudgetData = {
           budget: userData.budget || 0,
