@@ -55,16 +55,18 @@ export default function BudgetPage() {
     const loadBudgetData = () => {
       try {
         const savedBudget = budgetStorage.getBudgetData()
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromBreakdown = urlParams.get('fromBreakdown') === 'true';
+        
+        if (savedBudget && !fromBreakdown && !urlParams.get('step')) {
+          window.location.href = '/budget-breakdown';
+          return;
+        }
+        
         if (savedBudget) {
-          // If we have budget data and no specific step query param, redirect to breakdown
-          const urlParams = new URLSearchParams(window.location.search);
-          if (!urlParams.get('step')) {
-            window.location.href = '/budget-breakdown';
-            return;
-          }
           setBudgetData(savedBudget)
           setCategories(savedBudget.categories)
-          setShowQuestionnaire(false)
+          setShowQuestionnaire(urlParams.get('step') ? true : false)
         } else {
           setShowQuestionnaire(true)
         }

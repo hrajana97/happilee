@@ -103,7 +103,7 @@ export default function BudgetBreakdownPage() {
       const userData = storage.getUserData() as UserData;
       if (!userData || !userData.calculatedBudget) {
         // Redirect to budget survey if no data exists
-        window.location.href = '/dashboard/budget';
+        window.location.href = '/dashboard/budget?fromBreakdown=true';
         return;
       }
       if (userData) {
